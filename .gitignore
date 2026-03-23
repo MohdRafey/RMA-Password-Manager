@@ -1,0 +1,67 @@
+# gitignore file
+# for documentation on the syntax of gitignore files
+# see https://git-scm.com/docs/gitignore
+
+## folders
+
+### the folder with internal sources
+/DEPT/
+
+### any folder in the tree named .vs
+**/.vs/
+
+### any folder named Build except a .gitignore file in the folder
+**/Build/
+!**/Build/.gitignore
+
+### any folder named Generated
+**/Generated/
+
+### any folder named bin 
+**/bin/
+
+### any folder named obj
+**/obj/
+
+### any folder named Release except in Packages
+**/Release/
+!Packages/**/Release/
+
+### any folder named Debug except in Packages
+**/Debug/
+!Packages/**/Debug/
+
+### log folders
+**/log/
+
+### doc folders
+**/doc/
+
+### .vs folders
+**/.vs/
+
+## files
+
+### editor configu to enforce uniform formatting for new files
+### Why is this excluded?
+.editorconfig
+
+### visual studio code files
+.vscode
+
+### cache file for style cop
+StyleCop.Cache
+
+### any file with the .user extension
+*.user
+
+### any backup files
+*.bak
+
+### any file with .cache extension
+*.cache
+
+### any file with .bat extension
+*.bat
+
+

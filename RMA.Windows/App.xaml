@@ -6,12 +6,13 @@
              StartupUri="MainWindow.xaml">
   <Application.Resources>
     <ResourceDictionary>
-      <converters:InverseBooleanConverter x:Key="InverseBooleanConverter" />
-
       <ResourceDictionary.MergedDictionaries>
         <ui:ThemesDictionary Theme="Light" />
         <ui:ControlsDictionary />
+        <ResourceDictionary Source="Resources/DataTemplate.xaml" />
       </ResourceDictionary.MergedDictionaries>
+
+      <converters:InverseBooleanConverter x:Key="InverseBooleanConverter" />
     </ResourceDictionary>
   </Application.Resources>
 </Application>

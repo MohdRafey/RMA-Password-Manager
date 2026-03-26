@@ -1,0 +1,135 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml">
+
+  <DataTemplate x:Key="CredentialCardTemplate">
+    <Border Background="White" CornerRadius="16" Margin="0,0,25,25" 
+            Width="550" MinHeight="300" 
+            BorderBrush="#E8E8E8" BorderThickness="1"
+            HorizontalAlignment="Left">
+      <Border.Effect>
+        <DropShadowEffect BlurRadius="15" Opacity="0.04" ShadowDepth="3" Color="#3A5A40"/>
+      </Border.Effect>
+
+      <Grid Margin="25">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto"/>
+          <!-- 0: Header -->
+          <RowDefinition Height="*"/>
+          <!-- 1: Data Fields -->
+          <RowDefinition Height="Auto"/>
+          <!-- 2: Footer -->
+        </Grid.RowDefinitions>
+
+        <!-- ROW 0: HEADER -->
+        <DockPanel Grid.Row="0" Margin="0,0,0,20">
+          <Border Background="#F3F6F4" Width="44" Height="44" CornerRadius="10" DockPanel.Dock="Left" Margin="0,0,12,0">
+            <ui:SymbolIcon Symbol="ShieldLock24" FontSize="24" Foreground="#3A5A40"/>
+          </Border>
+          <StackPanel VerticalAlignment="Center">
+            <TextBlock Text="Google Workspace" FontWeight="Bold" FontSize="18" Foreground="#1B261C"/>
+            <TextBlock Text="Enterprise Admin" FontSize="11" Foreground="#889674" FontWeight="Medium"/>
+          </StackPanel>
+          <ui:Button Appearance="Transparent" Icon="{ui:SymbolIcon Copy24}" HorizontalAlignment="Right" VerticalAlignment="Top"/>
+        </DockPanel>
+
+        <!-- ROW 1: DATA FIELDS (The "Boxed" look) -->
+        <Grid Grid.Row="1">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="*" />
+          </Grid.ColumnDefinitions>
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <!-- URL -->
+            <RowDefinition Height="Auto" />
+            <!-- User/Pass -->
+            <RowDefinition Height="Auto" />
+            <!-- Notes -->
+          </Grid.RowDefinitions>
+
+          <!-- 1. URL Area -->
+          <StackPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,0,0,15">
+            <TextBlock Text="SERVICE DOMAIN" FontSize="9" FontWeight="Bold" Foreground="#3A5A40" Margin="2,0,0,4"/>
+            <TextBlock Margin="2,0,0,0">
+                        <Hyperlink Foreground="#A3B18A" TextDecorations="Underline">
+                            <Run Text="https://console.cloud.google.com/auth/login" />
+                        </Hyperlink>
+            </TextBlock>
+          </StackPanel>
+
+          <!-- 2. Username Box -->
+          <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,8,15">
+            <TextBlock Text="USERNAME" FontSize="9" FontWeight="Bold" Foreground="#3A5A40" Margin="2,0,0,4"/>
+            <ui:TextBox Text="ray.admin@sovereign.io" IsReadOnly="True" 
+                                Background="#F9F9F9" BorderThickness="1" BorderBrush="#EEEEEE"
+                                Padding="8,6" FontSize="13" Foreground="#333333"/>
+          </StackPanel>
+
+          <!-- 3. Password Box -->
+          <StackPanel Grid.Row="1" Grid.Column="1" Margin="8,0,0,15">
+            <TextBlock Text="PASSWORD" FontSize="9" FontWeight="Bold" Foreground="#3A5A40" Margin="2,0,0,4"/>
+            <Grid>
+              <ui:TextBox Text="••••••••••••" IsReadOnly="True" 
+                                    Background="#F9F9F9" BorderThickness="1" BorderBrush="#EEEEEE"
+                                    Padding="8,6" FontSize="13" FontFamily="Consolas"/>
+              <ui:Button Icon="{ui:SymbolIcon Eye24}" Appearance="Transparent" HorizontalAlignment="Right" Height="32" Width="32"/>
+            </Grid>
+          </StackPanel>
+
+          <!-- 4. Notes Box -->
+          <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2">
+            <TextBlock Text="ENCRYPTED NOTES" FontSize="9" FontWeight="Bold" Foreground="#3A5A40" Margin="2,0,0,4"/>
+            <ui:TextBox Text="Secondary recovery key is stored in the physical safe. Do not reset without hardware token MFA." 
+                                IsReadOnly="True" TextWrapping="Wrap" AcceptsReturn="True"
+                                Background="#F9F9F9" BorderThickness="1" BorderBrush="#EEEEEE"
+                                Padding="8" FontSize="12" Foreground="#666666" MinHeight="50"/>
+          </StackPanel>
+        </Grid>
+
+        <!-- ROW 2: FOOTER -->
+        <Grid Grid.Row="2" Margin="0,20,0,0">
+          <Separator VerticalAlignment="Top" Opacity="0.1" Margin="0,-10,0,0"/>
+          <DockPanel Margin="0,10,0,0">
+            <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+              <ui:SymbolIcon Symbol="History24" FontSize="16" Foreground="#B0B0B0" Margin="0,0,8,0"/>
+              <TextBlock Text="Last Change: 26 Mar 2026" FontSize="11" Foreground="#888888" VerticalAlignment="Center"/>
+            </StackPanel>
+
+            <Border Background="#F3F6F4" CornerRadius="6" Padding="10,4" HorizontalAlignment="Right">
+              <StackPanel Orientation="Horizontal">
+                <ui:SymbolIcon Symbol="Laptop24" FontSize="14" Foreground="#3A5A40" Margin="0,0,8,0"/>
+                <TextBlock Text="Synchronized via Windows Desktop" FontSize="10" FontWeight="Bold" Foreground="#3A5A40" VerticalAlignment="Center"/>
+              </StackPanel>
+            </Border>
+          </DockPanel>
+        </Grid>
+      </Grid>
+    </Border>
+  </DataTemplate>
+
+  <!-- 2. NOTE CARD DESIGN -->
+  <DataTemplate x:Key="NoteCardTemplate">
+    <Border Background="#FDFDFD" CornerRadius="12" Margin="0,0,20,20" 
+                Width="320" Height="180" BorderBrush="#F2F2F2" BorderThickness="1">
+      <Grid Margin="18">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Orientation="Horizontal">
+          <ui:SymbolIcon Symbol="Note24" FontSize="20" Foreground="#A3B18A" Margin="0,0,10,0"/>
+          <TextBlock Text="Deployment Notes" FontWeight="Bold" FontSize="16" Foreground="#333333" VerticalAlignment="Center"/>
+        </StackPanel>
+
+        <!-- WPF uses LineStackingStrategy for LineHeight effects -->
+        <TextBlock Grid.Row="1" Margin="0,12,0,0" TextWrapping="Wrap" 
+                           FontSize="12" Foreground="#555555"
+                           LineHeight="18" LineStackingStrategy="BlockLineHeight"
+                           Text="Remember to rotate the SSH keys for the RMA-Production environment every 90 days. Next rotation: June 2026."/>
+      </Grid>
+    </Border>
+  </DataTemplate>
+
+</ResourceDictionary>

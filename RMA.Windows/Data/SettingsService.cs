@@ -6,25 +6,25 @@ namespace RMA.Windows.Data
   {
     private const string SaltFileName = "vault.salt";
 
-    /// <summary>
-    /// Saves the cryptographic salt to a local file.
-    /// </summary>
-    public void SaveSalt(byte[] salt)
+    public void SaveSalt(byte[] salt, string vaultName)
     {
-      File.WriteAllBytes(SaltFileName, salt);
+      string appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+      string rmaFolder = Path.Combine(appData, "RMA");
+
+      // Ensure directory exists
+      Directory.CreateDirectory(rmaFolder);
+
+      string saltPath = Path.Combine(rmaFolder, $"{vaultName}.salt");
+      File.WriteAllBytes(saltPath, salt);
     }
 
-    /// <summary>
-    /// Loads the salt from the local file. Returns null if the file doesn't exist.
-    /// </summary>
-    public byte[]? LoadSalt()
+    public byte[]? LoadSalt(string vaultName)
     {
-      if (File.Exists(SaltFileName))
-      {
-        return File.ReadAllBytes(SaltFileName);
-      }
+      string appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+      string saltPath = Path.Combine(appData, "RMA", $"{vaultName}.salt");
 
-      return null;
+      if (!File.Exists(saltPath)) return null;
+      return File.ReadAllBytes(saltPath);
     }
 
     /// <summary>

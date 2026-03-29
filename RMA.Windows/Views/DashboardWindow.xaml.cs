@@ -1,64 +1,87 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
+﻿using System.Windows;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
+using System.Windows.Media.Effects;
 using Wpf.Ui.Controls;
+using RMA.Windows.ViewModels;
 
 namespace RMA.Windows.Views
 {
-    /// <summary>
-    /// Interaction logic for DashboardWindow.xaml
-    /// </summary>
-    public partial class DashboardWindow : FluentWindow
+  public partial class DashboardWindow : FluentWindow
   {
-        public DashboardWindow()
+    private readonly DashboardViewModel _viewModel;
+
+    public DashboardWindow()
+    {
+      _viewModel = new DashboardViewModel();
+      DataContext = _viewModel;
+      InitializeComponent();
+
+      this.PreviewKeyDown += (s, e) =>
+      {
+        if (e.Key == Key.Space && LockOverlay.Visibility == Visibility.Collapsed)
         {
-            InitializeComponent();
+          if (!(Keyboard.FocusedElement is System.Windows.Controls.TextBox ||
+                Keyboard.FocusedElement is Wpf.Ui.Controls.TextBox))
+          {
+            LockVault();
+            e.Handled = true;
+          }
         }
-
-    // 1. Minimize
-    private void MinimizeButton_Click(object sender, RoutedEventArgs e)
-    {
-      this.WindowState = WindowState.Minimized;
+      };
     }
 
-    // 2. Maximize / Restore
-    private void MaximizeButton_Click(object sender, RoutedEventArgs e)
+    #region Window Controls
+    private void MinimizeButton_Click(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
+    private void MaximizeButton_Click(object sender, RoutedEventArgs e) =>
+        WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
+    private void CloseButton_Click(object sender, RoutedEventArgs e) => Application.Current.Shutdown();
+    #endregion
+
+    #region Lock Logic
+    private void LockVault_Click(object sender, RoutedEventArgs e) => LockVault();
+
+    private void LockVault()
     {
-      if (this.WindowState == WindowState.Maximized)
-        this.WindowState = WindowState.Normal;
+      LockOverlay.Visibility = Visibility.Visible;
+      UnlockPasswordBox.Password = string.Empty;
+      UnlockPasswordBox.Focus();
+
+      VaultContent.Effect = new BlurEffect { Radius = 60, RenderingBias = RenderingBias.Quality };
+    }
+
+    private void Unlock_Click(object sender, RoutedEventArgs e)
+    {
+      if (_viewModel.AttemptUnlock(UnlockPasswordBox.Password))
+      {
+        LockOverlay.Visibility = Visibility.Collapsed;
+        VaultContent.Effect = null;
+        UnlockPasswordBox.Password = string.Empty;
+      }
       else
-        this.WindowState = WindowState.Maximized;
+      {
+        UnlockPasswordBox.Password = string.Empty;
+        System.Windows.MessageBox.Show("Access Denied: Incorrect PIN.");
+        UnlockPasswordBox.Focus();
+      }
     }
 
-    // 3. Close Application
-    private void CloseButton_Click(object sender, RoutedEventArgs e)
+    private void UnlockPasswordBox_KeyDown(object sender, KeyEventArgs e)
     {
-      Application.Current.Shutdown();
+      if (e.Key == Key.Enter) Unlock_Click(null, null);
     }
 
-    // 4. Lock (Return to Login)
-    private void LockVault_Click(object sender, RoutedEventArgs e)
+    private void AddNewItem_Click(object sender, RoutedEventArgs e)
     {
-      // Create a new instance of your Login window (MainWindow)
-      var loginWindow = new MainWindow();
+      var vm = new AddCredentialViewModel();
+      var win = new AddCredentialWindow { DataContext = vm, Owner = this };
 
-      // Set it as the primary window again
-      Application.Current.MainWindow = loginWindow;
+      vm.OnSaveSuccess += () => {
+        win.Close();
+        // Here we would call RefreshData() on the Dashboard
+      };
 
-      loginWindow.Show();
-
-      // Close this dashboard
-      this.Close();
+      win.ShowDialog();
     }
+    #endregion
   }
 }

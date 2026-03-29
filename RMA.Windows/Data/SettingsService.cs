@@ -1,35 +1,59 @@
-﻿using System.IO;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 
 namespace RMA.Windows.Data
 {
   public class SettingsService
   {
-    private const string SaltFileName = "vault.salt";
-
-    public void SaveSalt(byte[] salt, string vaultName)
+    private string GetRmaFolderPath()
     {
       string appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
       string rmaFolder = Path.Combine(appData, "RMA");
 
-      // Ensure directory exists
-      Directory.CreateDirectory(rmaFolder);
+      if (!Directory.Exists(rmaFolder))
+      {
+        Directory.CreateDirectory(rmaFolder);
+      }
 
-      string saltPath = Path.Combine(rmaFolder, $"{vaultName}.salt");
+      return rmaFolder;
+    }
+
+    public void SaveSalt(byte[] salt, string vaultName)
+    {
+      string saltPath = Path.Combine(GetRmaFolderPath(), $"{vaultName}.salt");
       File.WriteAllBytes(saltPath, salt);
     }
 
     public byte[]? LoadSalt(string vaultName)
     {
-      string appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-      string saltPath = Path.Combine(appData, "RMA", $"{vaultName}.salt");
-
-      if (!File.Exists(saltPath)) return null;
-      return File.ReadAllBytes(saltPath);
+      string saltPath = Path.Combine(GetRmaFolderPath(), $"{vaultName}.salt");
+      return File.Exists(saltPath) ? File.ReadAllBytes(saltPath) : null;
     }
 
     /// <summary>
-    /// Checks if the salt file exists (useful for detecting first-run status).
+    /// Returns true if at least one vault salt exists on the system.
     /// </summary>
-    public bool SaltExists() => File.Exists(SaltFileName);
+    public bool SaltExists()
+    {
+      return GetAllRegisteredVaultNames().Any();
+    }
+
+    /// <summary>
+    /// Scans the AppData folder for all .salt files to facilitate the 'Silent Sweep' login.
+    /// </summary>
+    public List<string> GetAllRegisteredVaultNames()
+    {
+      string path = GetRmaFolderPath();
+
+      if (!Directory.Exists(path)) return new List<string>();
+
+      return Directory.GetFiles(path, "*.salt")
+                      .Select(Path.GetFileNameWithoutExtension)
+                      .Where(name => name != null) // Filter out nulls
+                      .Cast<string>()              // Cast to non-nullable string
+                      .ToList();
+    }
   }
 }

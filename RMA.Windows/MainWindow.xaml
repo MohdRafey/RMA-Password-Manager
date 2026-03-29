@@ -70,16 +70,16 @@
           <TextBlock Text="Password Manager" FontSize="9" FontWeight="Bold" Foreground="#A3B18A" HorizontalAlignment="Center" Margin="0,-5,0,30"/>
 
           <TextBlock Text="Master PIN" Foreground="#3A5A40" Margin="0,0,0,8" FontSize="12" FontWeight="SemiBold"/>
-          <ui:PasswordBox x:Name="LoginPinBox" 
-                PlaceholderText="••••••••••••••••••" 
-                PasswordChar="●"
-                MaxLength="6"
-                FontSize="18"
-                Margin="0,0,0,15"
-                HorizontalContentAlignment="Left"
-                Padding="12,0,45,0" 
-                ClearButtonEnabled="False"
-                RevealButtonEnabled="True" />
+          <ui:PasswordBox  x:Name="LoginPinBox" 
+                           PlaceholderText="Enter PIN" 
+                           PasswordChar="●"
+                           Margin="0,0,0,15">
+            <ui:PasswordBox.InputBindings>
+              <KeyBinding Key="Enter" 
+                    Command="{Binding AuthenticateCommand}" 
+                    CommandParameter="{Binding ElementName=LoginPinBox}"/>
+            </ui:PasswordBox.InputBindings>
+          </ui:PasswordBox>
 
           <ui:Button Content="Login" 
                    Command="{Binding AuthenticateCommand}"

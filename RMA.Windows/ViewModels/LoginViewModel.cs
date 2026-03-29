@@ -2,25 +2,24 @@
 using CommunityToolkit.Mvvm.Input;
 using RMA.Windows.Core;
 using RMA.Windows.Data;
+using System;
+using System.Collections.ObjectModel;
 using System.Windows;
-using System.Windows.Controls;
 
 namespace RMA.Windows.ViewModels
 {
   public partial class LoginViewModel : ObservableObject
   {
     private readonly CryptoService _crypto = new();
-    private readonly VaultService _vault = new();
     private readonly SettingsService _settings = new();
 
     [ObservableProperty]
     private bool _isSetupMode = false;
 
-    // Command to switch between Login and Setup
     [RelayCommand]
     private void ToggleSetup() => IsSetupMode = !IsSetupMode;
 
-    // PATH 1: Existing User Login
+    // PATH 1: Existing User Login (The Silent Sweep)
     [RelayCommand]
     private void Authenticate(object parameter)
     {
@@ -29,57 +28,67 @@ namespace RMA.Windows.ViewModels
         string pin = passwordBox.Password;
         if (string.IsNullOrWhiteSpace(pin)) return;
 
+        var vaultNames = _settings.GetAllRegisteredVaultNames();
+        bool anyVaultOpened = false;
+
         try
         {
-          // 1. Setup the Vault Session
-          string currentVaultName = "Ray";
-          byte[]? salt = _settings.LoadSalt(currentVaultName);
-
-          if (salt == null)
+          foreach (var vaultName in vaultNames)
           {
-            MessageBox.Show($"No salt file found for {currentVaultName}.");
-            return;
-          }
+            byte[]? salt = _settings.LoadSalt(vaultName);
+            if (salt == null) continue;
 
-          byte[] key = _crypto.DeriveKey(pin, salt);
-          _vault.InitializeVault(key, currentVaultName);
-
-          // 2. Initialize and Show the Dashboard
-          var dashboard = new RMA.Windows.Views.DashboardWindow();
-
-          // Set the new window as the app's main window so it doesn't close on us
-          System.Windows.Application.Current.MainWindow = (System.Windows.Window)dashboard;
-
-          dashboard.Show();
-
-          // 3. Find and close the Login Window specifically
-          // We use a loop to find the 'MainWindow' (Login) to ensure we don't accidentally close the Dashboard we just opened
-          foreach (Window window in Application.Current.Windows)
-          {
-            if (window is MainWindow)
+            try
             {
-              window.Close();
-              break;
+              byte[] key = _crypto.DeriveKey(pin, salt);
+
+              // IMPORTANT: Use the Singleton Instance so the whole app shares the state
+              VaultService.Instance.InitializeVault(key, vaultName);
+
+              anyVaultOpened = true;
+              break; // Stop once we find the matching vault
+            }
+            catch
+            {
+              // Wrong PIN for this specific vault file, try the next one
+              continue;
             }
           }
+
+          if (anyVaultOpened)
+          {
+            var dashboard = new RMA.Windows.Views.DashboardWindow();
+            Application.Current.MainWindow = dashboard;
+            dashboard.Show();
+
+            foreach (Window window in Application.Current.Windows)
+            {
+              if (window is MainWindow)
+              {
+                window.Close();
+                break;
+              }
+            }
+          }
+          else
+          {
+            passwordBox.Password = string.Empty;
+            MessageBox.Show("Access Denied: Incorrect PIN.");
+          }
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-          // Clear the password box on failure for security
-          passwordBox.Password = string.Empty;
-          MessageBox.Show("Access Denied: Invalid PIN or Vault Error.");
+          MessageBox.Show("A system error occurred during authentication.");
         }
       }
     }
 
-    // PATH 2: New User Creation (The "Handshake")
+    // PATH 2: New User Creation
     [RelayCommand]
     private void CreateVault(object parameter)
     {
-      // The parameter is the StackPanel from XAML
       if (parameter is FrameworkElement container)
       {
-        // Find our controls by name
         var nameBox = container.FindName("VaultNameBox") as Wpf.Ui.Controls.TextBox;
         var pinBox = container.FindName("SetupPinBox") as Wpf.Ui.Controls.PasswordBox;
         var confirmBox = container.FindName("ConfirmPinBox") as Wpf.Ui.Controls.PasswordBox;
@@ -90,51 +99,30 @@ namespace RMA.Windows.ViewModels
         string pin = pinBox.Password;
         string confirm = confirmBox.Password;
 
-        // 1. Validations
-        if (string.IsNullOrEmpty(vaultName))
+        if (string.IsNullOrEmpty(vaultName) || pin.Length != 6 || pin != confirm)
         {
-          MessageBox.Show("Please give your vault a name.");
-          return;
-        }
-
-        if (pin.Length != 6 || !int.TryParse(pin, out _))
-        {
-          MessageBox.Show("PIN must be exactly 6 digits.");
-          return;
-        }
-
-        if (pin != confirm)
-        {
-          MessageBox.Show("PINs do not match.");
+          MessageBox.Show("Please check your input. PIN must be 6 digits.");
           return;
         }
 
         try
         {
-          // 2. The Crypto Process
           byte[] salt = _crypto.GenerateSalt();
-
-          // 3. The Stretching (Argon2id)
           byte[] masterKey = _crypto.DeriveKey(pin, salt);
 
-          // 4. Persistence
-          // We save the salt so we can derive this key again later
           _settings.SaveSalt(salt, vaultName);
 
-          // Create the encrypted .rma file in AppData
-          _vault.InitializeVault(masterKey, vaultName);
+          // Initialize the Singleton for the new vault
+          VaultService.Instance.InitializeVault(masterKey, vaultName);
 
-          MessageBox.Show($"{vaultName} vault created successfully!", "Sovereign Success");
+          MessageBox.Show($"{vaultName} vault created!", "Success");
 
-          // 5. Cleanup UI
           IsSetupMode = false;
-          nameBox.Text = string.Empty;
-          pinBox.Password = string.Empty;
-          confirmBox.Password = string.Empty;
+          // Optional: Navigate to dashboard immediately or let them login
         }
-        catch (System.Exception ex)
+        catch (Exception ex)
         {
-          MessageBox.Show($"Error creating vault: {ex.Message}");
+          MessageBox.Show($"Error: {ex.Message}");
         }
       }
     }

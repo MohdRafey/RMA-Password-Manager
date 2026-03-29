@@ -2,190 +2,136 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-        Title="RMA Dashboard" Height="750" Width="1100"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:RMA.Windows.ViewModels"
+        mc:Ignorable="d"
+        Title="RMA Dashboard" Height="750" Width="1100" MinWidth="1100" MinHeight="750"
         WindowStartupLocation="CenterScreen"
         ExtendsContentIntoTitleBar="True" 
         WindowBackdropType="Mica">
 
+  <!-- Design-time DataContext for Intellisense -->
+  <d:Window.DataContext>
+    <vm:DashboardViewModel />
+  </d:Window.DataContext>
+
   <Grid>
-    <Grid.RowDefinitions>
-      <RowDefinition Height="Auto" />
-      <!-- Top Menu Bar -->
-      <RowDefinition Height="*" />
-      <!-- Main Content -->
-    </Grid.RowDefinitions>
+    <Grid x:Name="VaultContent">
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="*" />
+      </Grid.RowDefinitions>
 
-    <!-- 1. TOP MENU STRIP (Title Bar Area) -->
-    <Grid Grid.Row="0" Background="#F3F6F4" Height="40">
-      <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="Auto" />
-        <!-- Logo/Name -->
-        <ColumnDefinition Width="*" />
-        <!-- Menu Items -->
-        <ColumnDefinition Width="Auto" />
+      <!-- 1. TOP MENU STRIP -->
+      <Grid Grid.Row="0" Background="#3A5A40" Height="40" >
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+
+        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="15,0,20,0">
+          <TextBlock Text=".RMA" FontWeight="Black" FontSize="24" Foreground="#F3F6F4" VerticalAlignment="Center"/>
+        </StackPanel>
+
+        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+          <ui:Button Content="Vault" Foreground="#F3F6F4" Appearance="Transparent" Padding="12,4" Margin="0,0,5,0" FontSize="12"/>
+          <ui:Button Content="Import" Foreground="#F3F6F4" Appearance="Transparent" Padding="12,4" Margin="0,0,5,0" FontSize="12"/>
+          <ui:Button Content="Settings" Foreground="#F3F6F4" Appearance="Transparent" Padding="12,4" Margin="0,0,5,0" FontSize="12"/>
+          <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="10,8" />
+          <Border Background="#E9EDC9" CornerRadius="4" Padding="8,2" VerticalAlignment="Center">
+            <StackPanel Orientation="Horizontal">
+              <ui:SymbolIcon Symbol="ShieldCheckmark24" FontSize="14" Foreground="#3A5A40" Margin="0,0,5,0"/>
+              <TextBlock Text="ENCRYPTED" FontSize="9" FontWeight="Bold" Foreground="#3A5A40" VerticalAlignment="Center"/>
+            </StackPanel>
+          </Border>
+        </StackPanel>
+
         <!-- Window Controls -->
-      </Grid.ColumnDefinitions>
+        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Top" Margin="0,5,15,0">
+          <ui:Button Content="{ui:SymbolIcon LockClosed24}" Width="30" Height="30" Padding="0" Margin="2,0" CornerRadius="15" Background="Black" Foreground="#F3F6F4" Click="LockVault_Click"/>
+          <ui:Button Appearance="Secondary" Content="{ui:SymbolIcon Subtract24}" Width="30" Height="30" Padding="0" Margin="2,0" CornerRadius="15" Click="MinimizeButton_Click"/>
+          <ui:Button Appearance="Secondary" Content="{ui:SymbolIcon Maximize24}" Width="30" Height="30" Padding="0" Margin="2,0" CornerRadius="15" Click="MaximizeButton_Click"/>
+          <ui:Button Appearance="Secondary" Content="{ui:SymbolIcon Dismiss24}" Width="30" Height="30" Padding="0" Margin="2,0" CornerRadius="15" Click="CloseButton_Click"/>
+        </StackPanel>
+      </Grid>
 
-      <!-- Software Branding -->
-      <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="15,0,20,0">
-        <TextBlock Text=".RMA" FontWeight="Black" FontSize="24" Foreground="#3A5A40" VerticalAlignment="Center"/>
-      </StackPanel>
+      <!-- 2. MAIN BODY -->
+      <Grid Grid.Row="1">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="260" />
+          <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
 
-      <!-- Menu Items -->
-      <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-        <ui:Button Content="Vault" Appearance="Transparent" Padding="12,4" Margin="0,0,5,0" FontSize="12"/>
-        <ui:Button Content="Import" Appearance="Transparent" Padding="12,4" Margin="0,0,5,0" FontSize="12"/>
-        <ui:Button Content="Settings" Appearance="Transparent" Padding="12,4" Margin="0,0,5,0" FontSize="12"/>
+        <!-- SIDEBAR -->
+        <Border Grid.Column="0" Background="#F3F6F4" BorderBrush="#DCE0DD" BorderThickness="0,0,1,0">
+          <Grid Margin="20">
+            <Grid.RowDefinitions>
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="*" />
+              <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
 
-        <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="10,8" />
+            <StackPanel Grid.Row="0" Margin="0,0,0,30">
+              <TextBlock Text="PERSONAL VAULT" FontSize="10" FontWeight="Bold" Foreground="#A3B18A" Margin="4,0,0,0"/>
+              <!-- BINDING UPDATED HERE -->
+              <TextBlock Text="{Binding VaultName, FallbackValue='Vault'}" FontSize="24" FontWeight="Bold" Foreground="#3A5A40"/>
+            </StackPanel>
 
-        <!-- Status Badge -->
-        <Border Background="#E9EDC9" CornerRadius="4" Padding="8,2" VerticalAlignment="Center">
-          <StackPanel Orientation="Horizontal">
-            <ui:SymbolIcon Symbol="ShieldCheckmark24" FontSize="14" Foreground="#3A5A40" Margin="0,0,5,0"/>
-            <TextBlock Text="ENCRYPTED" FontSize="9" FontWeight="Bold" Foreground="#3A5A40" VerticalAlignment="Center"/>
-          </StackPanel>
+            <StackPanel Grid.Row="1">
+              <ui:Button Content="Credentials" Icon="{ui:SymbolIcon Key24}" Appearance="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="12,8" Margin="0,0,0,4"/>
+              <ui:Button Content="Private Notes" Icon="{ui:SymbolIcon Note24}" Appearance="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="12,8" Margin="0,0,0,4"/>
+              <ui:Button Content="Financials" Icon="{ui:SymbolIcon Payment24}" Appearance="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="12,8" Margin="0,0,0,4"/>
+            </StackPanel>
+
+            <StackPanel Grid.Row="2">
+              <ui:Button Content="Add New Item" Icon="{ui:SymbolIcon Add24}" Appearance="Primary" HorizontalAlignment="Stretch" Height="40" Margin="0,0,0,15" FontWeight="SemiBold"/>
+              <ui:Button Content="Lock Vault" Icon="{ui:SymbolIcon LockClosed24}" Appearance="Danger" HorizontalAlignment="Stretch" Click="LockVault_Click"/>
+            </StackPanel>
+          </Grid>
         </Border>
-      </StackPanel>
 
-      <!-- Window Controls (Minimize, Maximize, Close) -->
-      <!-- Top Right Window Controls -->
-      <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Top" Margin="0,5,15,0">
+        <!-- MAIN CONTENT -->
+        <Border Grid.Column="1" Background="#FFFFFF" Padding="40">
+          <Grid Margin="30,0,30,0">
+            <Grid.RowDefinitions>
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
 
-        <ui:Button Appearance="Secondary"
-               Content="{ui:SymbolIcon LockClosed24}"
-               Width="30" Height="30" Padding="0" Margin="2,0"
-               CornerRadius="15" Opacity="0.4"
-               Click="LockVault_Click">
-          <ui:Button.Style>
-            <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
-              <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                  <Setter Property="Opacity" Value="1"/>
-                  <Setter Property="Foreground" Value="#3A5A40"/>
-                </Trigger>
-              </Style.Triggers>
-            </Style>
-          </ui:Button.Style>
-        </ui:Button>
+            <ui:TextBox Grid.Row="0" PlaceholderText="Search your vault..." Icon="{ui:SymbolIcon Search24}" Margin="0,0,0,30"/>
 
-        <ui:Button Appearance="Secondary"
-               Content="{ui:SymbolIcon Subtract24}"
-               Width="30" Height="30" Padding="0" Margin="2,0"
-               CornerRadius="15" Opacity="0.4"
-               Click="MinimizeButton_Click">
-          <ui:Button.Style>
-            <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
-              <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                  <Setter Property="Opacity" Value="1"/>
-                </Trigger>
-              </Style.Triggers>
-            </Style>
-          </ui:Button.Style>
-        </ui:Button>
-
-        <ui:Button Appearance="Secondary"
-               Content="{ui:SymbolIcon Maximize24}"
-               Width="30" Height="30" Padding="0" Margin="2,0"
-               CornerRadius="15" Opacity="0.4"
-               Click="MaximizeButton_Click">
-          <ui:Button.Style>
-            <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
-              <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                  <Setter Property="Opacity" Value="1"/>
-                </Trigger>
-              </Style.Triggers>
-            </Style>
-          </ui:Button.Style>
-        </ui:Button>
-
-        <ui:Button Appearance="Secondary"
-               Content="{ui:SymbolIcon Dismiss24}"
-               Width="30" Height="30" Padding="0" Margin="2,0"
-               CornerRadius="15" Opacity="0.4"
-               Click="CloseButton_Click">
-          <ui:Button.Style>
-            <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
-              <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                  <Setter Property="Opacity" Value="1"/>
-                  <Setter Property="Foreground" Value="#D00000"/>
-                  <Setter Property="Background" Value="Transparent"/>
-                </Trigger>
-              </Style.Triggers>
-            </Style>
-          </ui:Button.Style>
-        </ui:Button>
-      </StackPanel>
+            <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+              <WrapPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0">
+                <!-- Cards would go here -->
+                <ContentControl ContentTemplate="{StaticResource CredentialCardTemplate}" />
+              </WrapPanel>
+            </ScrollViewer>
+          </Grid>
+        </Border>
+      </Grid>
     </Grid>
 
-    <!-- 2. MAIN BODY (Split into Sidebar and Content) -->
-    <Grid Grid.Row="1">
-      <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="260" />
-        <ColumnDefinition Width="*" />
-      </Grid.ColumnDefinitions>
+    <!-- The Lock Overlay -->
+    <Grid x:Name="LockOverlay" Visibility="Collapsed" Panel.ZIndex="9999">
+      <Border Background="#99000000" />
+      <Border Background="#F3F6F4" Width="380" Height="280" CornerRadius="20" VerticalAlignment="Center" HorizontalAlignment="Center" BorderBrush="#3A5A40" BorderThickness="1.5">
+        <StackPanel VerticalAlignment="Center" Margin="30">
+          <ui:SymbolIcon Symbol="ShieldLock24" FontSize="44" Foreground="#3A5A40" Margin="0,0,0,15"/>
+          <TextBlock Text="VAULT LOCKED" FontWeight="Black" FontSize="18" Foreground="#1B261C" HorizontalAlignment="Center" Margin="0,0,0,25"/>
 
-      <!-- SIDEBAR -->
-      <Border Grid.Column="0" Background="#F3F6F4" BorderBrush="#DCE0DD" BorderThickness="0,0,1,0">
-        <Grid Margin="20,20,20,20">
-          <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
-          </Grid.RowDefinitions>
+          <ui:PasswordBox x:Name="UnlockPasswordBox" PlaceholderText="Enter PIN" PasswordChar="●" KeyDown="UnlockPasswordBox_KeyDown" Margin="0,0,0,20"/>
 
-          <StackPanel Grid.Row="0" Margin="0,0,0,30">
-            <TextBlock Text="PERSONAL VAULT" FontSize="10" FontWeight="Bold" Foreground="#A3B18A" Margin="4,0,0,0"/>
-            <TextBlock Text="Ray" FontSize="24" FontWeight="Bold" Foreground="#3A5A40"/>
-          </StackPanel>
-
-          <StackPanel Grid.Row="1">
-            <ui:Button Content="Credentials" Icon="{ui:SymbolIcon Key24}" Appearance="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="12,8" Margin="0,0,0,4"/>
-            <ui:Button Content="Private Notes" Icon="{ui:SymbolIcon Note24}" Appearance="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="12,8" Margin="0,0,0,4"/>
-            <ui:Button Content="Financials" Icon="{ui:SymbolIcon Payment24}" Appearance="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="12,8" Margin="0,0,0,4"/>
-          </StackPanel>
-
-          <StackPanel Grid.Row="2">
-            <ui:Button Content="Add New Item" Icon="{ui:SymbolIcon Add24}" Appearance="Primary" HorizontalAlignment="Stretch" Height="40" Margin="0,0,0,15" FontWeight="SemiBold"/>
-            <ui:Button Content="Lock Vault" Icon="{ui:SymbolIcon LockClosed24}" Appearance="Danger" HorizontalAlignment="Stretch" Click="LockVault_Click"/>
-          </StackPanel>
-        </Grid>
-      </Border>
-
-      <!-- MAIN CONTENT -->
-      <Border Grid.Column="1" Background="#FFFFFF" Padding="40">
-        <Grid Grid.Column="1" Margin="30,40,30,0">
-          <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-          </Grid.RowDefinitions>
-
-          <ui:TextBox Grid.Row="0" 
-                PlaceholderText="Search your vault..."
-                Icon="{ui:SymbolIcon Search24}"
-                VerticalAlignment="Top" 
-                Margin="0,0,0,30"/>
-
-          <ScrollViewer Grid.Row="1" 
-                  HorizontalScrollBarVisibility="Disabled"
-                  VerticalScrollBarVisibility="Auto">
-
-            <!-- FIX: Added a small Top Margin to the WrapPanel to separate it from the Search bar -->
-            <WrapPanel Orientation="Horizontal" 
-                   HorizontalAlignment="Center" 
-                   Margin="0,10,0,0">
-
-              <ContentControl ContentTemplate="{StaticResource CredentialCardTemplate}" />
-              <ContentControl ContentTemplate="{StaticResource CredentialCardTemplate}" />
-              <ContentControl ContentTemplate="{StaticResource CredentialCardTemplate}" />
-              <ContentControl ContentTemplate="{StaticResource CredentialCardTemplate}" />
-
-            </WrapPanel>
-          </ScrollViewer>
-        </Grid>
+          <Grid>
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <ui:Button Content="UNLOCK" Grid.Column="0" Appearance="Primary" Margin="0,0,5,0" HorizontalAlignment="Stretch" Height="40" FontWeight="Bold" Click="Unlock_Click"/>
+            <ui:Button Content="EXIT APP" Grid.Column="1" Appearance="Secondary" Margin="5,0,0,0" HorizontalAlignment="Stretch" Height="40" FontWeight="Bold" Click="CloseButton_Click"/>
+          </Grid>
+        </StackPanel>
       </Border>
     </Grid>
   </Grid>

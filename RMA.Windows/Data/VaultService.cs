@@ -33,30 +33,20 @@ namespace RMA.Windows.Data
       string appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
       string rmaFolder = Path.Combine(appData, "RMA");
 
-      if (!Directory.Exists(rmaFolder))
-        Directory.CreateDirectory(rmaFolder);
+      if (!Directory.Exists(rmaFolder)) Directory.CreateDirectory(rmaFolder);
 
       string fullPath = Path.Combine(rmaFolder, $"{vaultName}.rma");
-
-      // We use the Hex key for the SQLite Encryption (SQLCipher)
       _connectionString = $"Data Source={fullPath};Password={hexKey};";
 
+      // REMOVE the CREATE TABLE block from here! 
+      // Just open it to ensure the password is correct.
       using (var connection = new SqliteConnection(_connectionString))
       {
         connection.Open();
-        var command = connection.CreateCommand();
-        command.CommandText = @"
-                    CREATE TABLE IF NOT EXISTS Credentials (
-                        Id TEXT PRIMARY KEY, 
-                        Title TEXT NOT NULL,
-                        Username TEXT,
-                        Password TEXT,
-                        Url TEXT,
-                        Notes TEXT,
-                        LastModified TEXT DEFAULT CURRENT_TIMESTAMP
-                    );";
-        command.ExecuteNonQuery();
       }
+
+      // Call the NEW service to set up the tables correctly
+      DatabaseService.Instance.InitializeDatabase();
     }
 
     // Updated to check the actual AppData path

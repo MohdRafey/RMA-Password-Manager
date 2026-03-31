@@ -70,17 +70,37 @@
           <TextBlock Text="Password Manager" FontSize="9" FontWeight="Bold" Foreground="#A3B18A" HorizontalAlignment="Center" Margin="0,-5,0,30"/>
 
           <TextBlock Text="Master PIN" Foreground="#3A5A40" Margin="0,0,0,8" FontSize="12" FontWeight="SemiBold"/>
-          <ui:PasswordBox  x:Name="LoginPinBox" 
-                           PlaceholderText="Enter PIN" 
-                           PasswordChar="●"
-                           Margin="0,0,0,15">
-            <ui:PasswordBox.InputBindings>
-              <KeyBinding Key="Enter" 
-                    Command="{Binding AuthenticateCommand}" 
-                    CommandParameter="{Binding ElementName=LoginPinBox}"/>
-            </ui:PasswordBox.InputBindings>
-          </ui:PasswordBox>
+          <StackPanel>
+            <!-- Counter for the PIN -->
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,5,6">
+              <!-- This one changes color and number -->
+              <TextBlock x:Name="LoginCounter" 
+               Text="0" 
+               FontSize="10" 
+               FontWeight="Bold" 
+               Foreground="#889674"/>
 
+              <!-- This one stays static -->
+              <TextBlock Text="/6" 
+               FontSize="10" 
+               FontWeight="Bold" 
+               Foreground="{Binding Foreground, ElementName=LoginCounter}"/>
+            </StackPanel>
+
+            <ui:PasswordBox x:Name="LoginPinBox" 
+                    PlaceholderText="Enter 6-digit PIN" 
+                    PasswordChar="●"
+                    MaxLength="6"
+                    Margin="0,0,0,15"
+                    PasswordChanged="LoginPinBox_PasswordChanged"
+                    PreviewTextInput="LoginPinBox_PreviewTextInput">
+              <ui:PasswordBox.InputBindings>
+                <KeyBinding Key="Enter" 
+                        Command="{Binding AuthenticateCommand}" 
+                        CommandParameter="{Binding ElementName=LoginPinBox}"/>
+              </ui:PasswordBox.InputBindings>
+            </ui:PasswordBox>
+          </StackPanel>
           <ui:Button Content="Login" 
                    Command="{Binding AuthenticateCommand}"
                    CommandParameter="{Binding ElementName=LoginPinBox}"
@@ -98,7 +118,7 @@
 
           <TextBlock HorizontalAlignment="Center">
             <Run Text="New User?" Foreground="#6B705C" FontSize ="10"/>
-            <Hyperlink Command="{Binding ToggleSetupCommand}" Foreground="#3A5A40" FontSize ="10" TextDecorations="None">
+            <Hyperlink Command="{Binding ToggleSetupCommand}" Foreground="#3A5A40" FontSize ="12" TextDecorations="None">
                 Create a New Vault
             </Hyperlink>
           </TextBlock>

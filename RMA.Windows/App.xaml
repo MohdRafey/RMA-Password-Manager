@@ -6,13 +6,18 @@
              StartupUri="MainWindow.xaml">
   <Application.Resources>
     <ResourceDictionary>
+      <!-- 1. Define Global Objects (Converters) FIRST -->
+      <converters:InverseBooleanConverter x:Key="InverseBooleanConverter" />
+      <converters:GreaterThanConverter x:Key="GreaterThanConverter" />
+
       <ResourceDictionary.MergedDictionaries>
+        <!-- 2. UI Framework Styles -->
         <ui:ThemesDictionary Theme="Light" />
         <ui:ControlsDictionary />
+
+        <!-- 3. Your Custom Styles (They now 'see' the converters above) -->
         <ResourceDictionary Source="Resources/DataTemplate.xaml" />
       </ResourceDictionary.MergedDictionaries>
-
-      <converters:InverseBooleanConverter x:Key="InverseBooleanConverter" />
     </ResourceDictionary>
   </Application.Resources>
 </Application>

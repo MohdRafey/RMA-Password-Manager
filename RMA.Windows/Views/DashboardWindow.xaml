@@ -101,13 +101,41 @@
             </Grid.RowDefinitions>
 
             <ui:TextBox Grid.Row="0" PlaceholderText="Search your vault..." Icon="{ui:SymbolIcon Search24}" Margin="0,0,0,30"/>
-
+            <!-- 1. The list of cards -->
             <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-              <WrapPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0">
-                <!-- Cards would go here -->
-                <ContentControl ContentTemplate="{StaticResource CredentialCardTemplate}" />
-              </WrapPanel>
+              <ItemsControl ItemsSource="{Binding Credentials}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <WrapPanel Orientation="Horizontal" HorizontalAlignment="Center" />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <ContentControl Content="{Binding}" ContentTemplate="{StaticResource CredentialCardTemplate}" Margin="0,0,15,15"/>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
             </ScrollViewer>
+
+            <!-- 2. ADD THE "EMPTY STATE" TEXTBLOCK HERE -->
+            <TextBlock Grid.Row="1" 
+                   Text="Your vault is empty. Click 'Add New Item' to start."
+                   Foreground="Gray"
+                   FontSize="14"
+                   HorizontalAlignment="Center" 
+                   VerticalAlignment="Center">
+              <TextBlock.Style>
+                <Style TargetType="TextBlock">
+                  <Setter Property="Visibility" Value="Collapsed"/>
+                  <Style.Triggers>
+                    <!-- When Credentials count is 0, show this message -->
+                    <DataTrigger Binding="{Binding Credentials.Count}" Value="0">
+                      <Setter Property="Visibility" Value="Visible"/>
+                    </DataTrigger>
+                  </Style.Triggers>
+                </Style>
+              </TextBlock.Style>
+            </TextBlock>
           </Grid>
         </Border>
       </Grid>

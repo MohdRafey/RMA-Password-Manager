@@ -1,7 +1,10 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using RMA.Windows.Data;
+using RMA.Windows.Models;
 using System;
+using System.Collections.ObjectModel;
+using System.Net;
 using System.Windows;
 
 namespace RMA.Windows.ViewModels
@@ -14,10 +17,27 @@ namespace RMA.Windows.ViewModels
     [ObservableProperty]
     private string _vaultName;
 
+    [ObservableProperty]
+    private ObservableCollection<Credential> _credentials = new();
+
+    public bool IsVaultEmpty => Credentials.Count == 0;
+
     public DashboardViewModel()
     {
       // Set initial vault name from the Singleton
       VaultName = VaultService.Instance.ActiveVaultName ?? "Vault";
+      LoadCredentials();
+    }
+    public void LoadCredentials()
+    {
+      // Fetch from Database
+      var data = DatabaseService.Instance.GetAllCredentials();
+
+      Credentials.Clear();
+      foreach (var item in data)
+      {
+        Credentials.Add(item);
+      }
     }
 
     public bool AttemptUnlock(string pin)

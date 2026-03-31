@@ -14,38 +14,34 @@ namespace RMA.Windows.ViewModels
     private List<ServiceTemplate> _allTemplates = new();
 
     [ObservableProperty]
+    private string _serviceName = "";
+
+    [ObservableProperty]
     private string _serviceUrl = "";
 
     [ObservableProperty]
     private string _tag = "";
 
     [ObservableProperty]
-    private ObservableCollection<ServiceTemplate> _filteredTemplates = new();
-
-    [ObservableProperty]
-    private string _serviceName = "";
+    private string? _notes = "";
 
     [ObservableProperty]
     private string _username = "";
 
-    // This handles the filtering automatically when you type
+    public AddCredentialViewModel()
+    {
+      LoadTemplates();
+    }
+
+    private void LoadTemplates()
+    {
+      // Just load the data once
+      AllTemplates = DatabaseService.Instance.GetAllTemplates() ?? new List<ServiceTemplate>();
+    }
+
     partial void OnServiceNameChanged(string value)
     {
-      string query = value?.ToLower() ?? "";
-
-      // Filter the list
-      var matches = AllTemplates
-          .Where(t => t.Name.ToLower().Contains(query))
-          .ToList();
-
-      // Clear and refill the ObservableCollection
-      FilteredTemplates.Clear();
-      foreach (var match in matches)
-      {
-        FilteredTemplates.Add(match);
-      }
-
-      // Handle auto-fill for exact matches
+      // We still keep this just for the Auto-fill logic
       var exactMatch = AllTemplates.FirstOrDefault(t =>
           t.Name.Equals(value, StringComparison.OrdinalIgnoreCase));
 
@@ -56,23 +52,11 @@ namespace RMA.Windows.ViewModels
       }
     }
 
-    public AddCredentialViewModel()
-    {
-      LoadTemplates();
-    }
-
-    private void LoadTemplates()
-    {
-      var data = DatabaseService.Instance.GetAllTemplates() ?? new List<ServiceTemplate>();
-      AllTemplates = data;
-
-      FilteredTemplates.Clear();
-      foreach (var item in data) FilteredTemplates.Add(item);
-    }
-
     [RelayCommand]
     private void Save(object parameter)
     {
+      string updatedBy = "Windows Desktop";
+
       if (parameter is Wpf.Ui.Controls.PasswordBox pb)
       {
         string rawPassword = pb.Password;
@@ -82,7 +66,14 @@ namespace RMA.Windows.ViewModels
         var crypto = new CryptoService();
         string encryptedPassword = crypto.Encrypt(rawPassword, key);
 
-        DatabaseService.Instance.AddCredential(ServiceName, ServiceUrl, Username, encryptedPassword, Tag);
+        DatabaseService.Instance.AddCredential(
+            ServiceName,
+            ServiceUrl,
+            Username,
+            encryptedPassword,
+            Tag,
+            Notes,
+            updatedBy);
         DatabaseService.Instance.LearnService(ServiceName, ServiceUrl, Tag);
 
         OnSaveSuccess?.Invoke();

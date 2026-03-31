@@ -75,12 +75,13 @@ namespace RMA.Windows.Views
       var vm = new AddCredentialViewModel();
       var win = new AddCredentialWindow { DataContext = vm, Owner = this };
 
-      vm.OnSaveSuccess += () => {
-        win.Close();
-        // Here we would call RefreshData() on the Dashboard
-      };
+      // Setup the close trigger
+      vm.OnSaveSuccess += () => win.DialogResult = true;
 
-      win.ShowDialog();
+      if (win.ShowDialog() == true)
+      {
+        (this.DataContext as DashboardViewModel)?.LoadCredentials();
+      }
     }
     #endregion
   }

@@ -2,6 +2,7 @@
 using RMA.Windows.Models;
 using System;
 using System.Collections.Generic;
+using System.Net;
 
 namespace RMA.Windows.Data
 {
@@ -25,27 +26,30 @@ namespace RMA.Windows.Data
       {
         var command = connection.CreateCommand();
         command.Transaction = transaction;
+        // Inside DatabaseService.cs -> InitializeDatabase()
         command.CommandText = @"
-            CREATE TABLE IF NOT EXISTS Credentials (
-                Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                ServiceName TEXT NOT NULL,
-                ServiceUrl TEXT,
-                Username TEXT,
-                Password TEXT NOT NULL,
-                Tag TEXT,
-                CreatedAt DATETIME,
-                UpdatedAt DATETIME,
-                IsDeleted INTEGER DEFAULT 0,
-                DeletedDate DATETIME NULL
-            );
+          CREATE TABLE IF NOT EXISTS Credentials (
+            Id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ServiceName TEXT NOT NULL,
+            ServiceUrl TEXT,
+            Username TEXT,
+            Password TEXT NOT NULL,
+            Tag TEXT,
+            Notes TEXT,           -- Added Notes
+            CreatedAt DATETIME,
+            UpdatedAt DATETIME,
+            UpdatedBy TEXT,       -- Added UpdatedBy
+            IsDeleted INTEGER DEFAULT 0,
+            DeletedDate DATETIME NULL
+           );
 
-            CREATE TABLE IF NOT EXISTS ServiceTemplates (
-                Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                Name TEXT UNIQUE,
-                DefaultUrl TEXT,
-                Category TEXT, 
-                IconPath TEXT
-            );";
+           CREATE TABLE IF NOT EXISTS ServiceTemplates (
+            Id INTEGER PRIMARY KEY AUTOINCREMENT,
+            Name TEXT UNIQUE,
+            DefaultUrl TEXT,
+            Category TEXT, 
+            IconPath TEXT
+           );";
 
         command.ExecuteNonQuery();
         transaction.Commit();
@@ -60,22 +64,32 @@ namespace RMA.Windows.Data
       }
     }
 
-    public void AddCredential(string name, string url, string user, string pass, string tag)
+    public void AddCredential(string name, string url, string user, string pass, string tag, string notes, string updatedBy)
     {
       using var connection = new SqliteConnection(ConnectionString);
       connection.Open();
       using var command = connection.CreateCommand();
 
+      // 1. Update the SQL to include Notes and UpdatedBy
       command.CommandText = @"
-                INSERT INTO Credentials (ServiceName, ServiceUrl, Username, Password, Tag, CreatedAt, UpdatedAt) 
-                VALUES ($name, $url, $user, $pass, $tag, $date, $date)";
+        INSERT INTO Credentials 
+        (ServiceName, ServiceUrl, Username, Password, Tag, Notes, UpdatedBy, CreatedAt, UpdatedAt) 
+        VALUES 
+        ($name, $url, $user, $pass, $tag, $notes, $updatedBy, $date, $date)";
 
+      // 2. Map the existing parameters
       command.Parameters.AddWithValue("$name", name);
-      command.Parameters.AddWithValue("$url", url ?? (object)DBNull.Value);
-      command.Parameters.AddWithValue("$user", user ?? (object)DBNull.Value);
+      command.Parameters.AddWithValue("$url", (object)url ?? DBNull.Value);
+      command.Parameters.AddWithValue("$user", (object)user ?? DBNull.Value);
       command.Parameters.AddWithValue("$pass", pass);
       command.Parameters.AddWithValue("$tag", tag ?? "General");
-      command.Parameters.AddWithValue("$date", DateTime.Now);
+
+      // 3. Map the NEW parameters
+      command.Parameters.AddWithValue("$notes", (object)notes ?? DBNull.Value);
+      command.Parameters.AddWithValue("$updatedBy", updatedBy ?? "Windows Desktop");
+
+      // 4. Set the timestamp
+      command.Parameters.AddWithValue("$date", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
 
       command.ExecuteNonQuery();
     }
@@ -120,6 +134,31 @@ namespace RMA.Windows.Data
         });
       }
       return templates;
+    }
+
+    public List<Credential> GetAllCredentials()
+    {
+      var list = new List<Credential>();
+      using var connection = new SqliteConnection(ConnectionString);
+      connection.Open();
+
+      using var command = connection.CreateCommand();
+      command.CommandText = "SELECT Id, ServiceName, ServiceUrl, Username, Password, Tag FROM Credentials WHERE IsDeleted = 0";
+
+      using var reader = command.ExecuteReader();
+      while (reader.Read())
+      {
+        list.Add(new Credential
+        {
+          Id = reader.GetInt32(0).ToString(),
+          ServiceName = reader.GetString(1),
+          ServiceUrl = reader.IsDBNull(2) ? "" : reader.GetString(2),
+          Username = reader.IsDBNull(3) ? "" : reader.GetString(3),
+          Password = reader.GetString(4),
+          Tag = reader.IsDBNull(5) ? "General" : reader.GetString(5)
+        });
+      }
+      return list;
     }
 
     private void SeedServiceTemplates()

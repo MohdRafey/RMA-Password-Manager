@@ -1,6 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using RMA.Windows.Core;
 using RMA.Windows.Data;
 using System;
 using System.Windows;

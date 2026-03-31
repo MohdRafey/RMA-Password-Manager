@@ -4,7 +4,7 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace RMA.Windows.Core
+namespace RMA.Windows.Data
 {
   public class CryptoService
   {

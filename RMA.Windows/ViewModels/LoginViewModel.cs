@@ -1,6 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using RMA.Windows.Core;
 using RMA.Windows.Data;
 using System;
 using System.Collections.ObjectModel;
@@ -110,19 +109,28 @@ namespace RMA.Windows.ViewModels
           byte[] salt = _crypto.GenerateSalt();
           byte[] masterKey = _crypto.DeriveKey(pin, salt);
 
+          // 1. Save security metadata
           _settings.SaveSalt(salt, vaultName);
 
-          // Initialize the Singleton for the new vault
+          // 2. Initialize the Vault Service (Sets the key and connection string)
           VaultService.Instance.InitializeVault(masterKey, vaultName);
+
+          // --- THE CRITICAL ADDITION ---
+          // 3. Immediately build the tables and seed the templates
+          // This ensures 'ServiceTemplates' exists before the user ever sees the UI.
+          DatabaseService.Instance.InitializeDatabase();
+          // -----------------------------
 
           MessageBox.Show($"{vaultName} vault created!", "Success");
 
           IsSetupMode = false;
-          // Optional: Navigate to dashboard immediately or let them login
+
+          // Optional: Auto-login after creation
+          //NavigateToDashboard();
         }
         catch (Exception ex)
         {
-          MessageBox.Show($"Error: {ex.Message}");
+          MessageBox.Show($"Error during vault creation: {ex.Message}");
         }
       }
     }

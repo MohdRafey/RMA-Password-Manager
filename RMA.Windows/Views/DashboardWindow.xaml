@@ -86,7 +86,7 @@
             </StackPanel>
 
             <StackPanel Grid.Row="2">
-              <ui:Button Content="Add New Item" Icon="{ui:SymbolIcon Add24}" Appearance="Primary" HorizontalAlignment="Stretch" Height="40" Margin="0,0,0,15" FontWeight="SemiBold"/>
+              <ui:Button Content="Add New Item" Icon="{ui:SymbolIcon Add24}" Appearance="Primary" HorizontalAlignment="Stretch" Height="40" Margin="0,0,0,15" FontWeight="SemiBold" Click="AddNewItem_Click"/>
               <ui:Button Content="Lock Vault" Icon="{ui:SymbolIcon LockClosed24}" Appearance="Danger" HorizontalAlignment="Stretch" Click="LockVault_Click"/>
             </StackPanel>
           </Grid>

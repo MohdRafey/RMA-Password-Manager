@@ -136,6 +136,9 @@ namespace RMA.Windows.Data
       return templates;
     }
 
+    // <summary>
+    /// Retrieves all active credentials with full audit details.
+    /// </summary>
     public List<Credential> GetAllCredentials()
     {
       var list = new List<Credential>();
@@ -143,7 +146,13 @@ namespace RMA.Windows.Data
       connection.Open();
 
       using var command = connection.CreateCommand();
-      command.CommandText = "SELECT Id, ServiceName, ServiceUrl, Username, Password, Tag FROM Credentials WHERE IsDeleted = 0";
+      // Added Notes, CreatedAt, UpdatedAt, and UpdatedBy to the SELECT statement
+      command.CommandText = @"
+                SELECT Id, ServiceName, ServiceUrl, Username, Password, Tag, 
+                       Notes, CreatedAt, UpdatedAt, UpdatedBy 
+                FROM Credentials 
+                WHERE IsDeleted = 0 
+                ORDER BY ServiceName ASC";
 
       using var reader = command.ExecuteReader();
       while (reader.Read())
@@ -155,7 +164,13 @@ namespace RMA.Windows.Data
           ServiceUrl = reader.IsDBNull(2) ? "" : reader.GetString(2),
           Username = reader.IsDBNull(3) ? "" : reader.GetString(3),
           Password = reader.GetString(4),
-          Tag = reader.IsDBNull(5) ? "General" : reader.GetString(5)
+          Tag = reader.IsDBNull(5) ? "General" : reader.GetString(5),
+
+          // Audit & Extra Details
+          Notes = reader.IsDBNull(6) ? "" : reader.GetString(6),
+          CreatedAt = reader.IsDBNull(7) ? "" : reader.GetString(7),
+          UpdatedAt = reader.IsDBNull(8) ? "" : reader.GetString(8),
+          UpdatedBy = reader.IsDBNull(9) ? "Unknown Device" : reader.GetString(9)
         });
       }
       return list;

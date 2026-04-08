@@ -62,5 +62,54 @@ namespace RMA.Windows.ViewModels
         return false;
       }
     }
+
+    // --- COMMANDS ---
+
+    [RelayCommand]
+    private void TogglePassword(Credential credential)
+    {
+      if (credential == null) return;
+
+      // Get the key from your VaultService singleton
+      byte[] masterKey = VaultService.Instance.GetActiveKey();
+
+      credential.IsPasswordVisible = !credential.IsPasswordVisible;
+
+      if (credential.IsPasswordVisible)
+      {
+        // Use the _crypto instance if Decrypt is not static
+        credential.DecryptedPassword = _crypto.Decrypt(credential.Password, masterKey);
+      }
+      else
+      {
+        credential.DecryptedPassword = "••••••••••••";
+      }
+    }
+
+    [RelayCommand]
+    private void CopyPassword(Credential credential)
+    {
+      if (credential == null) return;
+
+      byte[] masterKey = VaultService.Instance.GetActiveKey();
+
+      // Decrypt on the fly for the clipboard
+      string plainText = _crypto.Decrypt(credential.Password, masterKey);
+
+      if (!string.IsNullOrEmpty(plainText))
+      {
+        Clipboard.SetText(plainText);
+        // Tip: You can trigger a WPF UI Snackbar here
+      }
+    }
+
+    [RelayCommand]
+    private void CopyUsername(Credential credential)
+    {
+      if (credential?.Username != null)
+      {
+        Clipboard.SetText(credential.Username);
+      }
+    }
   }
 }

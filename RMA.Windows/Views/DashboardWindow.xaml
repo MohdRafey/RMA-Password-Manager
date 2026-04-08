@@ -49,7 +49,7 @@
         </StackPanel>
 
         <!-- Window Controls -->
-        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Top" Margin="0,5,15,0">
+        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Top" Margin="0,5,5,0">
           <ui:Button Content="{ui:SymbolIcon LockClosed24}" Width="30" Height="30" Padding="0" Margin="2,0" CornerRadius="15" Background="Black" Foreground="#F3F6F4" Click="LockVault_Click"/>
           <ui:Button Appearance="Secondary" Content="{ui:SymbolIcon Subtract24}" Width="30" Height="30" Padding="0" Margin="2,0" CornerRadius="15" Click="MinimizeButton_Click"/>
           <ui:Button Appearance="Secondary" Content="{ui:SymbolIcon Maximize24}" Width="30" Height="30" Padding="0" Margin="2,0" CornerRadius="15" Click="MaximizeButton_Click"/>
@@ -144,12 +144,12 @@
     <!-- The Lock Overlay -->
     <Grid x:Name="LockOverlay" Visibility="Collapsed" Panel.ZIndex="9999">
       <Border Background="#99000000" />
-      <Border Background="#F3F6F4" Width="380" Height="280" CornerRadius="20" VerticalAlignment="Center" HorizontalAlignment="Center" BorderBrush="#3A5A40" BorderThickness="1.5">
+      <Border Background="#F3F6F4" Width="380" Height="280" CornerRadius="20" VerticalAlignment="Center" HorizontalAlignment="Center" BorderBrush="#3A5A40" BorderThickness="0.5">
         <StackPanel VerticalAlignment="Center" Margin="30">
           <ui:SymbolIcon Symbol="ShieldLock24" FontSize="44" Foreground="#3A5A40" Margin="0,0,0,15"/>
           <TextBlock Text="VAULT LOCKED" FontWeight="Black" FontSize="18" Foreground="#1B261C" HorizontalAlignment="Center" Margin="0,0,0,25"/>
 
-          <ui:PasswordBox x:Name="UnlockPasswordBox" PlaceholderText="Enter PIN" PasswordChar="●" KeyDown="UnlockPasswordBox_KeyDown" Margin="0,0,0,20"/>
+          <ui:PasswordBox x:Name="UnlockPasswordBox" PlaceholderText="Enter PIN" PasswordChar="●" MaxLength="6" KeyDown="UnlockPasswordBox_KeyDown" Margin="0,0,0,20"/>
 
           <Grid>
             <Grid.ColumnDefinitions>

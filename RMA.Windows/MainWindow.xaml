@@ -4,7 +4,7 @@
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         xmlns:vm="clr-namespace:RMA.Windows.ViewModels"
         Title="RMA" 
-        Height="450" Width="380"
+        Height="470" Width="380"
         WindowStartupLocation="CenterScreen"
         WindowStyle="None"
         AllowsTransparency="True"
@@ -68,31 +68,20 @@
           </StackPanel.Style>
           <TextBlock Text=".RMA" FontSize="42" FontWeight="ExtraBold" Foreground="#3A5A40" HorizontalAlignment="Center"/>
           <TextBlock Text="Password Manager" FontSize="9" FontWeight="Bold" Foreground="#A3B18A" HorizontalAlignment="Center" Margin="0,-5,0,30"/>
+          <TextBlock Text="User ID" Foreground="#3A5A40" Margin="0,0,0,8" FontSize="12" FontWeight="SemiBold"/>
+          <ui:TextBox x:Name="LoginUserIdBox" 
+                PlaceholderText="Enter your User ID" 
+                Icon="{ui:SymbolIcon Person24}"
+                Margin="0,0,0,15"/>
 
           <TextBlock Text="Master PIN" Foreground="#3A5A40" Margin="0,0,0,8" FontSize="12" FontWeight="SemiBold"/>
           <StackPanel>
-            <!-- Counter for the PIN -->
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,5,6">
-              <!-- This one changes color and number -->
-              <TextBlock x:Name="LoginCounter" 
-               Text="0" 
-               FontSize="10" 
-               FontWeight="Bold" 
-               Foreground="#889674"/>
-
-              <!-- This one stays static -->
-              <TextBlock Text="/6" 
-               FontSize="10" 
-               FontWeight="Bold" 
-               Foreground="{Binding Foreground, ElementName=LoginCounter}"/>
-            </StackPanel>
 
             <ui:PasswordBox x:Name="LoginPinBox" 
                     PlaceholderText="Enter 6-digit PIN" 
                     PasswordChar="●"
                     MaxLength="6"
                     Margin="0,0,0,15"
-                    PasswordChanged="LoginPinBox_PasswordChanged"
                     PreviewTextInput="LoginPinBox_PreviewTextInput">
               <ui:PasswordBox.InputBindings>
                 <KeyBinding Key="Enter" 

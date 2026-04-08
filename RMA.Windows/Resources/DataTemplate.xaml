@@ -32,10 +32,6 @@
             <!-- BINDING: Tag -->
             <TextBlock Text="{Binding Tag}" FontSize="11" Foreground="#889674" FontWeight="Medium"/>
           </StackPanel>
-          <ui:Button Appearance="Transparent" Icon="{ui:SymbolIcon Copy24}" 
-                   Command="{Binding DataContext.CopyPasswordCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                   CommandParameter="{Binding}"
-                   HorizontalAlignment="Right" VerticalAlignment="Top"/>
         </DockPanel>
 
         <!-- ROW 1: DATA FIELDS (The "Boxed" look) -->
@@ -67,23 +63,104 @@
           </StackPanel>
 
           <!-- 2. Username Box -->
-          <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,8,15">
+          <!--<StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,8,15">
             <TextBlock Text="USERNAME" FontSize="9" FontWeight="Bold" Foreground="#3A5A40" Margin="2,0,0,4"/>
-            <!-- BINDING: Username -->
+            --><!-- BINDING: Username --><!--
             <ui:TextBox Text="{Binding Username}" IsReadOnly="True" 
                                 Background="#F9F9F9" BorderThickness="1" BorderBrush="#EEEEEE"
                                 Padding="8,6" FontSize="13" Foreground="#333333"/>
+          </StackPanel>-->
+
+          <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,8,15">
+            <TextBlock Text="USERNAME" FontSize="9" FontWeight="Bold" Foreground="#3A5A40" Margin="2,0,0,4"/>
+
+            <Grid>
+              <ui:TextBox Text="{Binding Username}" 
+                    IsReadOnly="True" 
+                    Background="#F9F9F9" 
+                    BorderThickness="1" 
+                    BorderBrush="#EEEEEE"
+                    Padding="8,6,65,6" 
+                    FontSize="13" 
+                    Foreground="#333333"
+                    VerticalContentAlignment="Center"/>
+
+              <ui:Button Appearance="Transparent" 
+                   Icon="{ui:SymbolIcon Copy24}" 
+                   Width="30" Height="30" 
+                   HorizontalAlignment="Right" 
+                   VerticalAlignment="Center"
+                   Margin="0,0,2,0"
+                   Panel.ZIndex="1"
+                   Command="{Binding DataContext.CopyUsernameCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                   CommandParameter="{Binding}"/>
+            </Grid>
           </StackPanel>
 
           <!-- 3. Password Box -->
-          <StackPanel Grid.Row="1" Grid.Column="1" Margin="8,0,0,15">
+          <!--<StackPanel Grid.Row="1" Grid.Column="1" Margin="8,0,0,15">
             <TextBlock Text="PASSWORD" FontSize="9" FontWeight="Bold" Foreground="#3A5A40" Margin="2,0,0,4"/>
             <Grid>
-              <!-- Show bullets by default, or bind to a decrypted property if handled -->
+              --><!-- Show bullets by default, or bind to a decrypted property if handled --><!--
               <ui:TextBox Text="••••••••••••" IsReadOnly="True" Padding="8,6" FontSize="13" FontFamily="Consolas"/>
               <ui:Button Icon="{ui:SymbolIcon Eye24}" Appearance="Transparent" HorizontalAlignment="Right" Height="32" Width="32"/>
             </Grid>
+          </StackPanel>-->
+
+          <StackPanel Grid.Row="1" Grid.Column="1" Margin="8,0,0,15">
+            <TextBlock Text="PASSWORD" FontSize="9" FontWeight="Bold" Foreground="#3A5A40" Margin="2,0,0,4"/>
+            <Grid>
+              <ui:TextBox IsReadOnly="True" 
+                    Padding="8,6,65,6" 
+                    FontSize="13" 
+                    FontFamily="Consolas"
+                    VerticalContentAlignment="Center">
+                <ui:TextBox.Style>
+                  <Style TargetType="ui:TextBox" BasedOn="{StaticResource {x:Type ui:TextBox}}">
+                    <Setter Property="Text" Value="••••••••••••"/>
+                    <Style.Triggers>
+                      <DataTrigger Binding="{Binding IsPasswordVisible, Mode=OneWay}" Value="True">
+                        <Setter Property="Text" Value="{Binding DecryptedPassword}"/>
+                      </DataTrigger>
+                    </Style.Triggers>
+                  </Style>
+                </ui:TextBox.Style>
+              </ui:TextBox>
+
+              <StackPanel Orientation="Horizontal" 
+                    HorizontalAlignment="Right" 
+                    VerticalAlignment="Center" 
+                    Panel.ZIndex="1"
+                    Background="Transparent"
+                    Margin="0,0,0,0">
+
+                <ui:Button Appearance="Transparent" 
+                       Width="30" Height="30" Padding="0"
+                       Command="{Binding DataContext.TogglePasswordCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                       CommandParameter="{Binding}">
+                  <ui:SymbolIcon>
+                    <ui:SymbolIcon.Style>
+                      <Style TargetType="ui:SymbolIcon">
+                        <Setter Property="Symbol" Value="Eye24"/>
+                        <Style.Triggers>
+                          <DataTrigger Binding="{Binding IsPasswordVisible}" Value="True">
+                            <Setter Property="Symbol" Value="EyeOff24"/>
+                          </DataTrigger>
+                        </Style.Triggers>
+                      </Style>
+                    </ui:SymbolIcon.Style>
+                  </ui:SymbolIcon>
+                </ui:Button>
+
+                <ui:Button Appearance="Transparent" 
+                       Icon="{ui:SymbolIcon Copy24}" 
+                       Width="30" Height="30" Padding="0"
+                       Command="{Binding DataContext.CopyPasswordCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                       CommandParameter="{Binding}"/>
+              </StackPanel>
+            </Grid>
           </StackPanel>
+
 
           <!-- 4. Notes Box -->
           <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2">

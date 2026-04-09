@@ -8,6 +8,7 @@
     <ResourceDictionary>
       <!-- 1. Define Global Objects (Converters) FIRST -->
       <converters:InverseBooleanConverter x:Key="InverseBooleanConverter" />
+      <converters:InverseBooleanToVisibilityConverter x:Key="InverseBoolToVis" />
       <converters:GreaterThanConverter x:Key="GreaterThanConverter" />
 
       <ResourceDictionary.MergedDictionaries>
@@ -17,6 +18,7 @@
 
         <!-- 3. Your Custom Styles (They now 'see' the converters above) -->
         <ResourceDictionary Source="Resources/DataTemplate.xaml" />
+        <ResourceDictionary Source="Resources/Animations.xaml"/>
       </ResourceDictionary.MergedDictionaries>
     </ResourceDictionary>
   </Application.Resources>

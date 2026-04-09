@@ -4,7 +4,7 @@
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         xmlns:vm="clr-namespace:RMA.Windows.ViewModels"
         Title="RMA" 
-        Height="470" Width="380"
+        Height="520" Width="380"
         WindowStartupLocation="CenterScreen"
         WindowStyle="None"
         AllowsTransparency="True"
@@ -18,10 +18,50 @@
 
   <Window.Resources>
     <BooleanToVisibilityConverter x:Key="BoolToVis" />
+
+    <Style x:Key="ValidatedTextBoxStyle" TargetType="ui:TextBox" BasedOn="{StaticResource {x:Type ui:TextBox}}">
+      <Style.Triggers>
+        <DataTrigger Binding="{Binding IdHasError}" Value="True">
+          <Setter Property="BorderBrush" Value="#D00000"/>
+          <Setter Property="BorderThickness" Value="1.5"/>
+        </DataTrigger>
+      </Style.Triggers>
+    </Style>
+
+    <Style x:Key="ValidatedPasswordBoxStyle" TargetType="ui:PasswordBox" BasedOn="{StaticResource {x:Type ui:PasswordBox}}">
+      <Style.Triggers>
+        <DataTrigger Binding="{Binding PinHasError}" Value="True">
+          <Setter Property="BorderBrush" Value="#D00000"/>
+          <Setter Property="BorderThickness" Value="1.5"/>
+        </DataTrigger>
+      </Style.Triggers>
+    </Style>
+    <Style x:Key="RmaPrimaryButtonStyle" TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
+      <Setter Property="Appearance" Value="Primary"/>
+      <Setter Property="Background" Value="#3A5A40"/>
+      <Setter Property="BorderBrush" Value="#3A5A40"/>
+
+      <Style.Triggers>
+        <Trigger Property="IsEnabled" Value="False">
+          <Setter Property="Background" Value="#526D59"/>
+          <Setter Property="BorderBrush" Value="#526D59"/>
+          <Setter Property="Foreground" Value="#A3B18A"/>
+          <Setter Property="Opacity" Value="0.7"/>
+        </Trigger>
+
+        <MultiTrigger>
+          <MultiTrigger.Conditions>
+            <Condition Property="IsMouseOver" Value="True"/>
+            <Condition Property="IsEnabled" Value="False"/>
+          </MultiTrigger.Conditions>
+          <Setter Property="Background" Value="#526D59"/>
+        </MultiTrigger>
+      </Style.Triggers>
+    </Style>
   </Window.Resources>
 
   <Grid MouseLeftButtonDown="Window_MouseLeftButtonDown">
-    <Border Background="#FDFDFD" 
+    <Border x:Name="MainBorder" Background="#FDFDFD" 
                 CornerRadius="24" 
                 Padding="30" 
                 Margin="20"
@@ -30,6 +70,9 @@
       <Border.Effect>
         <DropShadowEffect BlurRadius="30" Opacity="0.15" ShadowDepth="8" Color="#2D5A27"/>
       </Border.Effect>
+      <Border.RenderTransform>
+        <TranslateTransform X="0" Y="0"/>
+      </Border.RenderTransform>
 
       <Grid>
         <ui:Button Appearance="Secondary"
@@ -66,44 +109,111 @@
               </Style.Triggers>
             </Style>
           </StackPanel.Style>
+          
           <TextBlock Text=".RMA" FontSize="42" FontWeight="ExtraBold" Foreground="#3A5A40" HorizontalAlignment="Center"/>
           <TextBlock Text="Password Manager" FontSize="9" FontWeight="Bold" Foreground="#A3B18A" HorizontalAlignment="Center" Margin="0,-5,0,30"/>
+          
+
+          
           <TextBlock Text="User ID" Foreground="#3A5A40" Margin="0,0,0,8" FontSize="12" FontWeight="SemiBold"/>
           <ui:TextBox x:Name="LoginUserIdBox" 
-                PlaceholderText="Enter your User ID" 
-                Icon="{ui:SymbolIcon Person24}"
-                Margin="0,0,0,15"/>
+                                Style="{StaticResource ValidatedTextBoxStyle}"
+                                IsEnabled="{Binding CanLogin}"
+                                PlaceholderText="Enter your User ID" 
+                                Icon="{ui:SymbolIcon Person24}"
+                                Margin="0,0,0,15"
+                                Text="{Binding UserIdInput, UpdateSourceTrigger=PropertyChanged}"/>
 
           <TextBlock Text="Master PIN" Foreground="#3A5A40" Margin="0,0,0,8" FontSize="12" FontWeight="SemiBold"/>
-          <StackPanel>
+          <ui:PasswordBox x:Name="LoginPinBox" 
+                                    Style="{StaticResource ValidatedPasswordBoxStyle}"
+                                    IsEnabled="{Binding CanLogin}"
+                                    PlaceholderText="Enter 6-digit PIN" 
+                                    PasswordChanged="LoginPinBox_PasswordChanged"
+                                    PasswordChar="●"
+                                    MaxLength="6"
+                                    Margin="0,0,0,15"
+                                    PreviewTextInput="LoginPinBox_PreviewTextInput">
+            <ui:PasswordBox.InputBindings>
+              <KeyBinding Key="Enter" 
+                                        Command="{Binding AuthenticateCommand}" 
+                                        CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=StackPanel}}"/>
+            </ui:PasswordBox.InputBindings>
+          </ui:PasswordBox>
 
-            <ui:PasswordBox x:Name="LoginPinBox" 
-                    PlaceholderText="Enter 6-digit PIN" 
-                    PasswordChar="●"
-                    MaxLength="6"
-                    Margin="0,0,0,15"
-                    PreviewTextInput="LoginPinBox_PreviewTextInput">
-              <ui:PasswordBox.InputBindings>
-                <KeyBinding Key="Enter" 
-                        Command="{Binding AuthenticateCommand}" 
-                        CommandParameter="{Binding ElementName=LoginPinBox}"/>
-              </ui:PasswordBox.InputBindings>
-            </ui:PasswordBox>
-          </StackPanel>
-          <ui:Button Content="Login" 
-                   Command="{Binding AuthenticateCommand}"
-                   CommandParameter="{Binding ElementName=LoginPinBox}"
-                   Appearance="Primary" 
-                   HorizontalAlignment="Stretch" 
-                   Height="45"
-                   Margin="0,0,0,10"/>
+          <TextBlock Text="{Binding ErrorMessage}" 
+                     
+                               Foreground="#D00000" 
+                               FontSize="14" 
+                               FontWeight="Normal"
+                               HorizontalAlignment="Left" 
+                               Margin="0,0,0,10"
+                               TextWrapping="Wrap"
+                               TextAlignment="Center"/>
+
+          <ui:Button Command="{Binding AuthenticateCommand}"
+            CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=StackPanel}}"
+            IsEnabled="{Binding CanLogin}"
+            Style="{StaticResource RmaPrimaryButtonStyle}"
+            HorizontalAlignment="Stretch" 
+            Height="50"
+            Margin="0,0,0,10">
+            <Grid>
+              <TextBlock Text="Login" VerticalAlignment="Center" HorizontalAlignment="Center">
+                <TextBlock.Style>
+                  <Style TargetType="TextBlock">
+                    <Setter Property="Visibility" Value="Visible"/>
+                    <Style.Triggers>
+                      <DataTrigger Binding="{Binding IsAuthenticating}" Value="True">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                      </DataTrigger>
+                      <DataTrigger Binding="{Binding IsLockedOut}" Value="True">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                      </DataTrigger>
+                    </Style.Triggers>
+                  </Style>
+                </TextBlock.Style>
+              </TextBlock>
+
+              <Grid Width="20" Height="20" HorizontalAlignment="Center" VerticalAlignment="Center"
+      Visibility="{Binding IsAuthenticating, Converter={StaticResource BoolToVis}}">
+                <Path Stroke="#3A5A40" 
+          StrokeThickness="2" 
+          StrokeStartLineCap="Round" 
+          StrokeEndLineCap="Round"
+          Data="M 10,1 A 9,9 0 1 1 2,14" 
+          RenderTransformOrigin="0.5,0.5">
+                  <Path.RenderTransform>
+                    <RotateTransform x:Name="SimpleSpinnerRotate"/>
+                  </Path.RenderTransform>
+                  <Path.Triggers>
+                    <EventTrigger RoutedEvent="Loaded">
+                      <BeginStoryboard>
+                        <Storyboard>
+                          <DoubleAnimation Storyboard.TargetName="SimpleSpinnerRotate"
+                                         Storyboard.TargetProperty="Angle"
+                                         From="0" To="360" Duration="0:0:0.8" 
+                                         RepeatBehavior="Forever"/>
+                        </Storyboard>
+                      </BeginStoryboard>
+                    </EventTrigger>
+                  </Path.Triggers>
+                </Path>
+              </Grid>
+
+              <StackPanel Orientation="Horizontal" Visibility="{Binding IsLockedOut, Converter={StaticResource BoolToVis}}">
+                <ui:SymbolIcon Symbol="LockClosed24" Margin="0,0,8,0"/>
+                <TextBlock Text="{Binding LockoutSeconds, StringFormat='Locked ({0}s)'}" VerticalAlignment="Center"/>
+              </StackPanel>
+            </Grid>
+          </ui:Button>
 
           <ui:Button Content="Login Using QR" 
-                   Icon="{ui:SymbolIcon QrCode24}"
-                   Appearance="Secondary" 
-                   HorizontalAlignment="Stretch" 
-                   Height="40"
-                   Margin="0,0,0,20"/>
+           IsEnabled="{Binding IsAuthenticating, Converter={StaticResource InverseBooleanConverter}}"
+           Appearance="Secondary" 
+           HorizontalAlignment="Stretch" 
+           Height="40"
+           Margin="0,0,0,20"/>
 
           <TextBlock HorizontalAlignment="Center">
             <Run Text="New User?" Foreground="#6B705C" FontSize ="10"/>
@@ -112,17 +222,16 @@
             </Hyperlink>
           </TextBlock>
         </StackPanel>
+        
         <StackPanel VerticalAlignment="Center" 
             Visibility="{Binding IsSetupMode, Converter={StaticResource BoolToVis}}">
 
           <TextBlock Text="Create Identity" FontSize="32" FontWeight="Bold" Foreground="#3A5A40" HorizontalAlignment="Center"/>
-
           <TextBlock Text="Vault Name" Foreground="#3A5A40" Margin="0,15,0,8" FontSize="12" FontWeight="SemiBold"/>
           <ui:TextBox x:Name="VaultNameBox" 
                 PlaceholderText="e.g. Ray_Personal" 
                 Icon="{ui:SymbolIcon Person24}"
                 Margin="0,0,0,10"/>
-
           <ui:PasswordBox x:Name="SetupPinBox" PlaceholderText="Choose 6-digit PIN" Margin="0,0,0,10"/>
           <ui:PasswordBox x:Name="ConfirmPinBox" PlaceholderText="Confirm PIN" Margin="0,0,0,20"/>
 

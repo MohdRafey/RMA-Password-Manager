@@ -19,42 +19,58 @@ namespace RMA.Windows.Data
       using var connection = new SqliteConnection(ConnectionString);
       connection.Open();
 
-      // Use a Transaction to ensure both tables are created 
-      // before the connection closes.
       using var transaction = connection.BeginTransaction();
       try
       {
         var command = connection.CreateCommand();
         command.Transaction = transaction;
-        // Inside DatabaseService.cs -> InitializeDatabase()
-        command.CommandText = @"
-          CREATE TABLE IF NOT EXISTS Credentials (
-            Id INTEGER PRIMARY KEY AUTOINCREMENT,
-            ServiceName TEXT NOT NULL,
-            ServiceUrl TEXT,
-            Username TEXT,
-            Password TEXT NOT NULL,
-            Tag TEXT,
-            Notes TEXT,           -- Added Notes
-            CreatedAt DATETIME,
-            UpdatedAt DATETIME,
-            UpdatedBy TEXT,       -- Added UpdatedBy
-            IsDeleted INTEGER DEFAULT 0,
-            DeletedDate DATETIME NULL
-           );
 
-           CREATE TABLE IF NOT EXISTS ServiceTemplates (
-            Id INTEGER PRIMARY KEY AUTOINCREMENT,
-            Name TEXT UNIQUE,
-            DefaultUrl TEXT,
-            Category TEXT, 
-            IconPath TEXT
-           );";
+        command.CommandText = @"
+            CREATE TABLE IF NOT EXISTS Credentials (
+                Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                
+                -- Versioning Columns --
+                GroupId INTEGER NOT NULL,          -- Anchor for the account family
+                Version INTEGER DEFAULT 1,         -- Increments per update
+                IsArchived INTEGER DEFAULT 0,      -- 0 = Active, 1 = History
+                
+                -- Core Data --
+                ServiceName TEXT NOT NULL,
+                ServiceUrl TEXT,
+                Username TEXT,
+                Password TEXT NOT NULL,
+                Tag TEXT,
+                Notes TEXT,
+                
+                -- Audit Metadata --
+                CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+                UpdatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+                UpdatedBy TEXT,                    -- Machine name/User ID
+                
+                -- Recycle Bin Logic --
+                IsDeleted INTEGER DEFAULT 0,       -- 1 = In Trash
+                DeletedAt DATETIME NULL            -- Timestamp for auto-purge logic
+            );
+
+            CREATE TABLE IF NOT EXISTS ServiceTemplates (
+                Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                Name TEXT UNIQUE,
+                DefaultUrl TEXT,
+                Category TEXT, 
+                IconPath TEXT
+            );";
 
         command.ExecuteNonQuery();
-        transaction.Commit();
 
-        // Only seed AFTER the transaction is committed
+        // Indexing for performance
+        command.CommandText = "CREATE INDEX IF NOT EXISTS idx_groupid ON Credentials (GroupId);";
+        command.ExecuteNonQuery();
+
+        // Indexing for the Dashboard (Filtering Live/Non-deleted items)
+        command.CommandText = "CREATE INDEX IF NOT EXISTS idx_live_credentials ON Credentials (IsArchived, IsDeleted);";
+        command.ExecuteNonQuery();
+
+        transaction.Commit();
         SeedServiceTemplates();
       }
       catch (Exception)
@@ -68,30 +84,49 @@ namespace RMA.Windows.Data
     {
       using var connection = new SqliteConnection(ConnectionString);
       connection.Open();
-      using var command = connection.CreateCommand();
 
-      // 1. Update the SQL to include Notes and UpdatedBy
-      command.CommandText = @"
-        INSERT INTO Credentials 
-        (ServiceName, ServiceUrl, Username, Password, Tag, Notes, UpdatedBy, CreatedAt, UpdatedAt) 
-        VALUES 
-        ($name, $url, $user, $pass, $tag, $notes, $updatedBy, $date, $date)";
+      // Using a transaction to ensure the 'Anchor' (GroupId) is set correctly
+      using var transaction = connection.BeginTransaction();
 
-      // 2. Map the existing parameters
-      command.Parameters.AddWithValue("$name", name);
-      command.Parameters.AddWithValue("$url", (object)url ?? DBNull.Value);
-      command.Parameters.AddWithValue("$user", (object)user ?? DBNull.Value);
-      command.Parameters.AddWithValue("$pass", pass);
-      command.Parameters.AddWithValue("$tag", tag ?? "General");
+      try
+      {
+        using var command = connection.CreateCommand();
+        command.Transaction = transaction;
 
-      // 3. Map the NEW parameters
-      command.Parameters.AddWithValue("$notes", (object)notes ?? DBNull.Value);
-      command.Parameters.AddWithValue("$updatedBy", updatedBy ?? "Windows Desktop");
+        // 1. Insert the record with GroupId = 0 (placeholder)
+        // Note: Version defaults to 1 and IsArchived to 0 via DB schema
+        command.CommandText = @"
+            INSERT INTO Credentials 
+            (GroupId, ServiceName, ServiceUrl, Username, Password, Tag, Notes, UpdatedBy) 
+            VALUES 
+            (0, $name, $url, $user, $pass, $tag, $notes, $updatedBy);
+            
+            SELECT last_insert_rowid();";
 
-      // 4. Set the timestamp
-      command.Parameters.AddWithValue("$date", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+        command.Parameters.AddWithValue("$name", name);
+        command.Parameters.AddWithValue("$url", (object)url ?? DBNull.Value);
+        command.Parameters.AddWithValue("$user", (object)user ?? DBNull.Value);
+        command.Parameters.AddWithValue("$pass", pass);
+        command.Parameters.AddWithValue("$tag", tag ?? "General");
+        command.Parameters.AddWithValue("$notes", (object)notes ?? DBNull.Value);
+        command.Parameters.AddWithValue("$updatedBy", updatedBy ?? Environment.MachineName);
 
-      command.ExecuteNonQuery();
+        // 2. Execute and capture the newly generated Id
+        long newId = (long)command.ExecuteScalar();
+
+        // 3. 'Anchor' the family: Set GroupId equal to the row's own Id
+        command.CommandText = "UPDATE Credentials SET GroupId = Id WHERE Id = $id";
+        command.Parameters.Clear();
+        command.Parameters.AddWithValue("$id", newId);
+        command.ExecuteNonQuery();
+
+        transaction.Commit();
+      }
+      catch (Exception)
+      {
+        transaction.Rollback();
+        throw;
+      }
     }
 
     public void LearnService(string name, string url, string category)
@@ -146,13 +181,14 @@ namespace RMA.Windows.Data
       connection.Open();
 
       using var command = connection.CreateCommand();
-      // Added Notes, CreatedAt, UpdatedAt, and UpdatedBy to the SELECT statement
       command.CommandText = @"
-                SELECT Id, ServiceName, ServiceUrl, Username, Password, Tag, 
-                       Notes, CreatedAt, UpdatedAt, UpdatedBy 
-                FROM Credentials 
-                WHERE IsDeleted = 0 
-                ORDER BY ServiceName ASC";
+        SELECT 
+            Id, GroupId, Version, ServiceName, ServiceUrl, 
+            Username, Password, Tag, Notes, 
+            CreatedAt, UpdatedAt, UpdatedBy, DeletedAt 
+        FROM Credentials 
+        WHERE IsDeleted = 0 AND IsArchived = 0 
+        ORDER BY ServiceName ASC";
 
       using var reader = command.ExecuteReader();
       while (reader.Read())
@@ -160,17 +196,22 @@ namespace RMA.Windows.Data
         list.Add(new Credential
         {
           Id = reader.GetInt32(0).ToString(),
-          ServiceName = reader.GetString(1),
-          ServiceUrl = reader.IsDBNull(2) ? "" : reader.GetString(2),
-          Username = reader.IsDBNull(3) ? "" : reader.GetString(3),
-          Password = reader.GetString(4),
-          Tag = reader.IsDBNull(5) ? "General" : reader.GetString(5),
+          GroupId = reader.GetInt32(1),
+          Version = reader.GetInt32(2),
+          ServiceName = reader.GetString(3),
+          ServiceUrl = reader.IsDBNull(4) ? "" : reader.GetString(4),
+          Username = reader.IsDBNull(5) ? "" : reader.GetString(5),
+          Password = reader.GetString(6),
+          Tag = reader.IsDBNull(7) ? "General" : reader.GetString(7),
 
           // Audit & Extra Details
-          Notes = reader.IsDBNull(6) ? "" : reader.GetString(6),
-          CreatedAt = reader.IsDBNull(7) ? "" : reader.GetString(7),
-          UpdatedAt = reader.IsDBNull(8) ? "" : reader.GetString(8),
-          UpdatedBy = reader.IsDBNull(9) ? "Unknown Device" : reader.GetString(9)
+          Notes = reader.IsDBNull(8) ? "" : reader.GetString(8),
+          CreatedAt = reader.IsDBNull(9) ? "" : reader.GetString(9),
+          UpdatedAt = reader.IsDBNull(10) ? "" : reader.GetString(10),
+          UpdatedBy = reader.IsDBNull(11) ? "Unknown Device" : reader.GetString(11),
+
+          // NEW: Mapping the deletion timestamp
+          DeletedAt = reader.IsDBNull(12) ? null : reader.GetString(12)
         });
       }
       return list;

@@ -3,6 +3,7 @@ using System.Windows.Input;
 using System.Windows.Media.Effects;
 using Wpf.Ui.Controls;
 using RMA.Windows.ViewModels;
+using MessageBox = System.Windows.MessageBox;
 
 namespace RMA.Windows.Views
 {
@@ -60,7 +61,7 @@ namespace RMA.Windows.Views
       else
       {
         UnlockPasswordBox.Password = string.Empty;
-        System.Windows.MessageBox.Show("Access Denied: Incorrect PIN.");
+        RmaDialog.Error("Access Denied", "Incorrect PIN.");
         UnlockPasswordBox.Focus();
       }
     }
@@ -84,5 +85,25 @@ namespace RMA.Windows.Views
       }
     }
     #endregion
+
+    private void TestInfo_Click(object sender, RoutedEventArgs e)
+    {
+      RmaDialog.Info("System Update", "Your encrypted vault has been synchronized with the local database.");
+    }
+
+    private void TestWarn_Click(object sender, RoutedEventArgs e)
+    {
+      // Testing the boolean return logic
+      if (RmaDialog.Warn("Security Alert", "You are about to export your passwords to a plain text file. Do you want to proceed?"))
+      {
+        // This only runs if they click "Okay"
+        RmaDialog.Info("Export", "Data exported successfully.");
+      }
+    }
+
+    private void TestError_Click(object sender, RoutedEventArgs e)
+    {
+      RmaDialog.Error("Database Error", "Unable to establish a connection to the local vault. Please check your file permissions.");
+    }
   }
 }

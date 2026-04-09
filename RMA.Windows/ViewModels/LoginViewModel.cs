@@ -1,10 +1,18 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using RMA.Windows.Data;
+using RMA.Windows.Validator;
+using RMA.Windows.Views;
+using System;
 using System;
 using System.IO;
 using System.Linq;
+using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
+using ui = Wpf.Ui.Controls;
+using System.Windows.Threading;
+
 
 namespace RMA.Windows.ViewModels
 {
@@ -12,57 +20,158 @@ namespace RMA.Windows.ViewModels
   {
     private readonly CryptoService _crypto = new();
     private readonly SettingsService _settings = new();
+    private readonly DispatcherTimer _lockoutTimer;
 
-    [ObservableProperty]
-    private bool _isSetupMode = false;
+    // --- UI State Properties ---
+    [ObservableProperty] private bool _isSetupMode = false;
+    [ObservableProperty][NotifyPropertyChangedFor(nameof(CanLogin))] private bool _isAuthenticating;
+    [ObservableProperty][NotifyPropertyChangedFor(nameof(CanLogin))] private bool _isLockedOut;
+    [ObservableProperty] private int _lockoutSeconds;
+    [ObservableProperty] private string _errorMessage = string.Empty;
+    [ObservableProperty] private bool _idHasError;
+    [ObservableProperty] private bool _pinHasError;
+    [ObservableProperty] private string _userIdInput = string.Empty;
+
+    private int _failedAttempts = 0;
+    public bool CanLogin => !IsAuthenticating && !IsLockedOut;
+
+    public LoginViewModel()
+    {
+      _lockoutTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+      _lockoutTimer.Tick += LockoutTimer_Tick;
+    }
+
+    partial void OnUserIdInputChanged(string value)
+    {
+      IdHasError = false; // Border turns normal immediately
+      if (!PinHasError) ErrorMessage = string.Empty;
+    }
 
     [RelayCommand]
     private void ToggleSetup() => IsSetupMode = !IsSetupMode;
 
     [RelayCommand]
-    private void Authenticate(object parameter)
+    private async Task AuthenticateAsync(object parameter)
     {
-      if (parameter is FrameworkElement container)
+      // Clear previous state
+      IdHasError = false;
+      PinHasError = false;
+      ErrorMessage = string.Empty;
+
+      // Get values from UI (logic to extract PIN from PasswordBox)
+      string userId = UserIdInput;
+      string pin = ExtractPin(parameter);
+
+      // 1. CALL THE VALIDATOR
+      var result = LoginValidator.ValidateLogin(userId, pin);
+
+      if (!result.IsSuccess)
       {
-        var nameBox = container.FindName("LoginUserIdBox") as Wpf.Ui.Controls.TextBox;
-        var passwordBox = container.FindName("LoginPinBox") as Wpf.Ui.Controls.PasswordBox;
+        IdHasError = result.IsIdInvalid;
+        PinHasError = result.IsPinInvalid;
+        ErrorMessage = result.Message;
+        TriggerShake();
+        return;
+      }
 
-        if (nameBox == null || passwordBox == null) return;
+      // 2. PROCEED IF VALID
+      IsAuthenticating = true;
 
-        string inputName = nameBox.Text.Trim();
-        string pin = passwordBox.Password;
+      await Task.Delay(1500);
 
-        if (string.IsNullOrWhiteSpace(inputName) || string.IsNullOrWhiteSpace(pin)) return;
+      try
+      {
+        var allVaults = _settings.GetAllRegisteredVaultNames();
+        string? actualVaultName = allVaults.FirstOrDefault(v =>
+            v.Equals(userId, StringComparison.OrdinalIgnoreCase));
 
-        try
+        if (actualVaultName == null)
         {
-          // 1. FIND THE ACTUAL FILENAME
-          // We look through registered vaults to find a case-insensitive match
-          var allVaults = _settings.GetAllRegisteredVaultNames();
-          string? actualVaultName = allVaults.FirstOrDefault(v =>
-              v.Equals(inputName, StringComparison.OrdinalIgnoreCase));
-
-          if (actualVaultName == null)
-          {
-            MessageBox.Show("Access Denied: Vault not found.");
-            return;
-          }
-
-          // 2. PROCEED WITH ACTUAL CASE
-          byte[]? salt = _settings.LoadSalt(actualVaultName);
-          if (salt == null) return;
-
-          byte[] key = _crypto.DeriveKey(pin, salt);
-          VaultService.Instance.InitializeVault(key, actualVaultName);
-
-          // Navigation logic...
-          NavigateToDashboard();
+          HandleFailedAttempt();
+          return;
         }
-        catch (Exception)
-        {
-          passwordBox.Password = string.Empty;
-          MessageBox.Show("Access Denied: Incorrect PIN.");
-        }
+
+        byte[]? salt = _settings.LoadSalt(actualVaultName);
+        if (salt == null) { HandleFailedAttempt(); return; }
+
+        // Attempt decryption
+        byte[] key = _crypto.DeriveKey(pin, salt);
+        VaultService.Instance.InitializeVault(key, actualVaultName);
+
+        // If we reach here, success!
+        _failedAttempts = 0;
+        NavigateToDashboard();
+      }
+      catch (Exception)
+      {
+        ClearPasswordBox(parameter);
+        HandleFailedAttempt();
+      }
+      finally
+      {
+        IsAuthenticating = false;
+      }
+    }
+
+    private string ExtractPin(object parameter)
+    {
+      if (parameter is FrameworkElement element)
+      {
+        // Search the StackPanel for the PasswordBox named 'LoginPinBox'
+        var pb = element.FindName("LoginPinBox") as ui.PasswordBox;
+        return pb?.Password ?? string.Empty;
+      }
+      return string.Empty;
+    }
+
+    private void ClearPasswordBox(object parameter)
+    {
+      if (parameter is FrameworkElement element)
+      {
+        var pb = element.FindName("LoginPinBox") as ui.PasswordBox;
+        if (pb != null) pb.Password = string.Empty;
+      }
+    }
+
+    private void HandleFailedAttempt()
+    {
+      _failedAttempts++;
+      ErrorMessage = "Invalid User ID or Master PIN.";
+      TriggerShake();
+
+      if (_failedAttempts >= 3)
+      {
+        StartLockout(30);
+      }
+    }
+
+    private void StartLockout(int seconds)
+    {
+      IsLockedOut = true;
+      LockoutSeconds = seconds;
+      ErrorMessage = $"Too many attempts. Locked for {seconds}s.";
+      _lockoutTimer.Start();
+    }
+
+    private void TriggerShake()
+    {
+      // We call a method in the View via Application.Current.MainWindow
+      if (Application.Current.MainWindow is MainWindow loginWindow)
+      {
+        // We will define this method in MainWindow.xaml.cs next
+        (loginWindow as dynamic).ExecuteShake();
+      }
+    }
+
+    private void LockoutTimer_Tick(object? sender, EventArgs e)
+    {
+      LockoutSeconds--;
+      if (LockoutSeconds <= 0)
+      {
+        _lockoutTimer.Stop();
+        IsLockedOut = false;
+        ErrorMessage = string.Empty;
+        _failedAttempts = 0; // Reset after wait
       }
     }
 
@@ -88,7 +197,7 @@ namespace RMA.Windows.ViewModels
           var existing = _settings.GetAllRegisteredVaultNames();
           if (existing.Any(v => v.Equals(vaultName, StringComparison.OrdinalIgnoreCase)))
           {
-            MessageBox.Show("A vault with this name already exists (case-insensitive).");
+            RmaDialog.Error("Identity Error","A vault with this name already exists (case-insensitive).");
             return;
           }
 
@@ -100,12 +209,12 @@ namespace RMA.Windows.ViewModels
           VaultService.Instance.InitializeVault(masterKey, vaultName);
           DatabaseService.Instance.InitializeDatabase();
 
-          MessageBox.Show($"Vault '{vaultName}' created!", "Success");
+          RmaDialog.Info($"Vault '{vaultName}' created!", "Success");
           IsSetupMode = false;
         }
         catch (Exception ex)
         {
-          MessageBox.Show($"Error: {ex.Message}");
+          RmaDialog.Error($"Exception Error:", "{ex.Message}");
         }
       }
     }

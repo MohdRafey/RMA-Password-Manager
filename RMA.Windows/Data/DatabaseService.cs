@@ -189,6 +189,24 @@ namespace RMA.Windows.Data
         throw;
       }
     }
+
+    public int DeleteCredential(int groupId)
+    {
+      using var connection = new SqliteConnection(ConnectionString);
+      connection.Open();
+
+      using var command = connection.CreateCommand();
+      command.CommandText = @"
+        UPDATE Credentials 
+        SET IsDeleted = 1, 
+            DeletedAt = CURRENT_TIMESTAMP 
+        WHERE GroupId = $groupId";
+
+      command.Parameters.AddWithValue("$groupId", groupId);
+
+      // Returns the number of versions moved to trash
+      return command.ExecuteNonQuery();
+    }
     public void LearnService(string name, string url, string category)
     {
       if (string.IsNullOrWhiteSpace(name)) return;

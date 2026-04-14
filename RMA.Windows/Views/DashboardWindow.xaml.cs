@@ -1,8 +1,10 @@
-﻿using System.Windows;
+﻿using RMA.Windows.Services;
+using RMA.Windows.ViewModels;
+using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media.Effects;
+using Wpf.Ui;
 using Wpf.Ui.Controls;
-using RMA.Windows.ViewModels;
 using MessageBox = System.Windows.MessageBox;
 
 namespace RMA.Windows.Views
@@ -10,25 +12,42 @@ namespace RMA.Windows.Views
   public partial class DashboardWindow : FluentWindow
   {
     private readonly DashboardViewModel _viewModel;
+    private readonly ISnackbarService _snackbarService;
 
     public DashboardWindow()
     {
-      _viewModel = new DashboardViewModel();
-      DataContext = _viewModel;
       InitializeComponent();
 
+      // 1. Initialize the VM and set the DataContext
+      _viewModel = new DashboardViewModel();
+      DataContext = _viewModel;
+
+      // 2. Setup the UI Snackbar Presenter
+      _snackbarService = new SnackbarService();
+      _snackbarService.SetSnackbarPresenter(DashboardSnackbar);
+
+      // 3. Create the Notification Service using our EXISTING _viewModel
+      // No need to cast (DashboardViewModel)this.DataContext anymore
+      var notificationService = new NotificationService(_snackbarService, _viewModel);
+
+      // 4. Inject it
+      _viewModel.SetNotificationService(notificationService);
+
+      // 5. Space-to-Lock (Your important logic)
       this.PreviewKeyDown += (s, e) =>
       {
         if (e.Key == Key.Space && LockOverlay.Visibility == Visibility.Collapsed)
         {
-          if (!(Keyboard.FocusedElement is System.Windows.Controls.TextBox ||
-                Keyboard.FocusedElement is Wpf.Ui.Controls.TextBox))
+          var focused = Keyboard.FocusedElement;
+          if (!(focused is System.Windows.Controls.TextBox || focused is Wpf.Ui.Controls.TextBox))
           {
             LockVault();
             e.Handled = true;
           }
         }
       };
+
+      notificationService.Notify("Vault Online", "RMA is ready and encrypted.", NotificationType.Success);
     }
 
     #region Window Controls
@@ -71,17 +90,37 @@ namespace RMA.Windows.Views
       if (e.Key == Key.Enter) Unlock_Click(null, null);
     }
 
-    private void AddNewItem_Click(object sender, RoutedEventArgs e)
+    private void TopBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
-      var vm = new AddCredentialViewModel();
-      var win = new AddCredentialWindow { DataContext = vm, Owner = this };
-
-      // Setup the close trigger
-      vm.OnSaveSuccess += () => win.DialogResult = true;
-
-      if (win.ShowDialog() == true)
+      // 1. Handle Double-Click to Maximize/Restore
+      if (e.ClickCount == 2)
       {
-        (this.DataContext as DashboardViewModel)?.LoadCredentials();
+        MaximizeButton_Click(sender, e);
+        return;
+      }
+
+      // 2. Handle Dragging from Fullscreen/Maximized
+      if (e.ChangedButton == MouseButton.Left)
+      {
+        if (this.WindowState == WindowState.Maximized)
+        {
+          // 1. Get the absolute mouse position on the screen
+          Point screenMousePos = PointToScreen(e.GetPosition(this));
+
+          // 2. Calculate the horizontal percentage (where on the bar are we?)
+          double resumeWidth = this.RestoreBounds.Width;
+          double xRatio = e.GetPosition(this).X / this.ActualWidth;
+
+          // 3. Restore window state
+          this.WindowState = WindowState.Normal;
+
+          // 4. Calculate new Left/Top so the mouse stays in the same relative spot
+          this.Left = screenMousePos.X - (resumeWidth * xRatio);
+          this.Top = screenMousePos.Y - e.GetPosition(this).Y;
+        }
+
+        // 5. Drag the window
+        this.DragMove();
       }
     }
     #endregion

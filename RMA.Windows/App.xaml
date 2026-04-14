@@ -11,6 +11,10 @@
       <converters:InverseBooleanToVisibilityConverter x:Key="InverseBoolToVis" />
       <converters:GreaterThanConverter x:Key="GreaterThanConverter" />
 
+      <SolidColorBrush x:Key="SnackbarBackgroundFillColorDefaultBrush" Color="#3A5A40" />
+      <SolidColorBrush x:Key="SnackbarForegroundFillColorDefaultBrush" Color="#F3F6F4" />
+      <SolidColorBrush x:Key="SnackbarCheckBoxBackgroundFillColorDefaultBrush" Color="#A3B18A" />
+
       <ResourceDictionary.MergedDictionaries>
         <!-- 2. UI Framework Styles -->
         <ui:ThemesDictionary Theme="Light" />
@@ -20,6 +24,7 @@
         <ResourceDictionary Source="Resources/DataTemplate.xaml" />
         <ResourceDictionary Source="Resources/Animations.xaml"/>
       </ResourceDictionary.MergedDictionaries>
+      
     </ResourceDictionary>
   </Application.Resources>
 </Application>

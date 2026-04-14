@@ -19,10 +19,12 @@
           <!-- 1: Data Fields -->
           <RowDefinition Height="Auto"/>
           <!-- 2: Footer -->
+          <RowDefinition Height="Auto"/>
+          <!-- 3: Controls -->
         </Grid.RowDefinitions>
 
         <!-- ROW 0: HEADER -->
-        <DockPanel Grid.Row="0" Margin="0,0,0,20">
+        <DockPanel Grid.Row="0" Margin="0,0,0,10">
           <Border Background="#F3F6F4" Width="44" Height="44" CornerRadius="10" DockPanel.Dock="Left" Margin="0,0,12,0">
             <ui:SymbolIcon Symbol="ShieldLock24" FontSize="24" Foreground="#3A5A40"/>
           </Border>
@@ -50,9 +52,7 @@
           </Grid.RowDefinitions>
 
           <!-- 1. URL Area -->
-
-          <!-- 1. URL Area -->
-          <StackPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,0,0,15">
+          <StackPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,0,0,10">
             <TextBlock Text="SERVICE DOMAIN" FontSize="9" FontWeight="Bold" Foreground="#3A5A40" Margin="2,0,0,4"/>
             <TextBlock Margin="2,0,0,0">
             <Hyperlink Foreground="#A3B18A" TextDecorations="Underline">
@@ -171,16 +171,15 @@
         </Grid>
 
         <!-- ROW 2: FOOTER -->
-        <Grid Grid.Row="2" Margin="0,20,0,0">
-          <Separator VerticalAlignment="Top" Opacity="0.1" Margin="0,-10,0,0"/>
-          <DockPanel Margin="0,10,0,0">
+        <Grid Grid.Row="2" Margin="0,5,0,10">
+          <DockPanel Margin="0,0,0,0">
             <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
               <ui:SymbolIcon Symbol="History24" FontSize="16" Foreground="#B0B0B0" Margin="0,0,8,0"/>
               <!-- BINDING: UpdatedAt -->
               <TextBlock Text="{Binding UpdatedAt, StringFormat='{}Last Change: {0}'}" FontSize="11" Foreground="#888888" VerticalAlignment="Center"/>
             </StackPanel>
-
-            <Border Background="#F3F6F4" CornerRadius="6" Padding="10,4" HorizontalAlignment="Right">
+            
+            <Border Background="#F3F6F4" CornerRadius="6" Padding="10,0" HorizontalAlignment="Right">
               <StackPanel Orientation="Horizontal">
                 <!-- DYNAMIC ICON BASED ON DEVICE -->
                 <ui:SymbolIcon Symbol="Laptop24" FontSize="14" Foreground="#3A5A40" Margin="0,0,8,0"/>
@@ -188,6 +187,44 @@
                 <TextBlock Text="{Binding UpdatedBy, StringFormat='{}Synchronized via {0}'}" FontSize="10" FontWeight="Bold" Foreground="#3A5A40" VerticalAlignment="Center"/>
               </StackPanel>
             </Border>
+          </DockPanel>
+        </Grid>
+        
+        <Separator Grid.Row="2" VerticalAlignment="Bottom" Opacity="0.9" Background="#E8E8E8"/>
+        
+        <!-- ROW 3: Control -->
+        <Grid Grid.Row="3" Margin="0,10,0,0">
+          <DockPanel>
+            <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+              <ui:Button Content="Edit" 
+                       Icon="{ui:SymbolIcon Edit24}" 
+                       Appearance="Secondary"
+                       FontSize="12" Padding="15,6" Margin="0,0,10,0"
+                       Command="{Binding DataContext.EditCredentialCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                       CommandParameter="{Binding}"/>
+
+              <ui:Button Content="Share" 
+                       Icon="{ui:SymbolIcon Share24}" 
+                       Appearance="Transparent"
+                       FontSize="12" Foreground="#6B705C" Padding="12,6"/>
+            </StackPanel>
+
+            <ui:Button Content="Delete" 
+                   Icon="{ui:SymbolIcon Delete24}" 
+                   Appearance="Transparent"
+                   Foreground="#D00000" FontSize="12" HorizontalAlignment="Right" Padding="15,6"
+                   Command="{Binding DataContext.DeleteCredentialCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                   CommandParameter="{Binding}">
+              <ui:Button.Style>
+                <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
+                  <Style.Triggers>
+                    <Trigger Property="IsMouseOver" Value="True">
+                      <Setter Property="Background" Value="#FFE5E5"/>
+                    </Trigger>
+                  </Style.Triggers>
+                </Style>
+              </ui:Button.Style>
+            </ui:Button>
           </DockPanel>
         </Grid>
       </Grid>

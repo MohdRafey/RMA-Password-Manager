@@ -3,7 +3,7 @@
 public partial class Credential : ObservableObject
 {
   // Primary Database Identity
-  public string Id { get; set; } = string.Empty;
+  public int Id { get; set; } = 0;
 
   // --- Versioning & Ledger Properties ---
   public int GroupId { get; set; }           // The 'Family ID' that stays the same for all versions

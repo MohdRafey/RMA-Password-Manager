@@ -129,6 +129,66 @@ namespace RMA.Windows.Data
       }
     }
 
+    public void UpdateCredential(int id, string name, string url, string user, string pass, string tag, string notes, string updatedBy)
+    {
+      using var connection = new SqliteConnection(ConnectionString);
+      connection.Open();
+      using var transaction = connection.BeginTransaction();
+
+      try
+      {
+        // 1. Get current Version and GroupId of the record we are editing
+        using var getCmd = connection.CreateCommand();
+        getCmd.CommandText = "SELECT GroupId, Version FROM Credentials WHERE Id = $id";
+        getCmd.Parameters.AddWithValue("$id", id);
+        getCmd.Transaction = transaction;
+
+        int groupId = 0;
+        int currentVersion = 0;
+        using (var reader = getCmd.ExecuteReader())
+        {
+          if (reader.Read())
+          {
+            groupId = reader.GetInt32(0);
+            currentVersion = reader.GetInt32(1);
+          }
+        }
+
+        // 2. Archive the old record
+        using var archiveCmd = connection.CreateCommand();
+        archiveCmd.Transaction = transaction;
+        archiveCmd.CommandText = "UPDATE Credentials SET IsArchived = 1 WHERE Id = $id";
+        archiveCmd.Parameters.AddWithValue("$id", id);
+        archiveCmd.ExecuteNonQuery();
+
+        // 3. Insert the new version
+        using var insertCmd = connection.CreateCommand();
+        insertCmd.Transaction = transaction;
+        insertCmd.CommandText = @"
+            INSERT INTO Credentials 
+            (GroupId, Version, ServiceName, ServiceUrl, Username, Password, Tag, Notes, UpdatedBy) 
+            VALUES 
+            ($groupId, $newVersion, $name, $url, $user, $pass, $tag, $notes, $updatedBy);";
+
+        insertCmd.Parameters.AddWithValue("$groupId", groupId);
+        insertCmd.Parameters.AddWithValue("$newVersion", currentVersion + 1);
+        insertCmd.Parameters.AddWithValue("$name", name);
+        insertCmd.Parameters.AddWithValue("$url", (object)url ?? DBNull.Value);
+        insertCmd.Parameters.AddWithValue("$user", (object)user ?? DBNull.Value);
+        insertCmd.Parameters.AddWithValue("$pass", pass);
+        insertCmd.Parameters.AddWithValue("$tag", tag ?? "General");
+        insertCmd.Parameters.AddWithValue("$notes", (object)notes ?? DBNull.Value);
+        insertCmd.Parameters.AddWithValue("$updatedBy", updatedBy ?? Environment.MachineName);
+
+        insertCmd.ExecuteNonQuery();
+        transaction.Commit();
+      }
+      catch (Exception)
+      {
+        transaction.Rollback();
+        throw;
+      }
+    }
     public void LearnService(string name, string url, string category)
     {
       if (string.IsNullOrWhiteSpace(name)) return;
@@ -195,7 +255,7 @@ namespace RMA.Windows.Data
       {
         list.Add(new Credential
         {
-          Id = reader.GetInt32(0).ToString(),
+          Id = reader.GetInt32(0),
           GroupId = reader.GetInt32(1),
           Version = reader.GetInt32(2),
           ServiceName = reader.GetString(3),

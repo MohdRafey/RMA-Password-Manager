@@ -2,6 +2,7 @@
 using CommunityToolkit.Mvvm.Input;
 using RMA.Windows.Data;
 using RMA.Windows.Models;
+using RMA.Windows.Views;
 using System;
 using System.Collections.ObjectModel;
 using System.Net;
@@ -110,6 +111,43 @@ namespace RMA.Windows.ViewModels
       {
         Clipboard.SetText(credential.Username);
       }
+    }
+
+    [RelayCommand]
+    private void EditCredential(Credential credential)
+    {
+      if (credential == null) return;
+
+      // 1. Initialize Window
+      var editWindow = new AddCredentialWindow();
+
+      // Set the owner so it centers correctly over the main dashboard
+      editWindow.Owner = System.Windows.Application.Current.MainWindow;
+
+      // 2. Use the new helper method you just wrote
+      // This handles: Loading text to VM, Decrypting Password, and Setting the PasswordBox
+      editWindow.PrepareForEdit(credential);
+
+      // 3. Optional: Auto-close the window on success
+      if (editWindow.DataContext is AddCredentialViewModel vm)
+      {
+        vm.OnSaveSuccess += () => editWindow.Close();
+      }
+
+      // 4. Show Window as a modal dialog
+      editWindow.ShowDialog();
+
+      // 5. Refresh the dashboard list to show the updated entry
+      LoadCredentials();
+    }
+
+    [RelayCommand]
+    private void DeleteCredential(Credential credential)
+    {
+      if (credential == null) return;
+
+      // Add your DatabaseService.Instance.Delete logic here
+      // Then refresh the list
     }
   }
 }

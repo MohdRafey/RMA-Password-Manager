@@ -1,4 +1,5 @@
-﻿using RMA.Windows.Helpers;
+﻿using RMA.Windows.Data;
+using RMA.Windows.Helpers;
 using RMA.Windows.Models;
 using RMA.Windows.ViewModels;
 using System.Diagnostics; // Added for Debug.WriteLine
@@ -97,6 +98,45 @@ namespace RMA.Windows.Views
           }
         }
       }
+    }
+    public void PrepareForEdit(Credential model)
+    {
+      if (DataContext is AddCredentialViewModel vm)
+      {
+        vm.LoadCredential(model);
+
+        // If the window is already loaded, set it immediately
+        if (this.IsLoaded)
+        {
+          ServiceSearchBox.Text = model.ServiceName;
+        }
+        else
+        {
+          // If not loaded yet, hook into the Loaded event to set it once UI is ready
+          this.Loaded += (s, e) =>
+          {
+            ServiceSearchBox.Text = model.ServiceName;
+          };
+        }
+
+        // Handle Password
+        try
+        {
+          byte[] key = VaultService.Instance.GetActiveKey();
+          var crypto = new CryptoService();
+          string decryptedPassword = crypto.Decrypt(model.Password, key);
+          PassBox.Password = decryptedPassword;
+        }
+        catch (Exception ex)
+        {
+          Debug.WriteLine($"Decryption Error: {ex.Message}");
+        }
+      }
+    }
+
+    public void SetPassword(string decryptedPassword)
+    {
+      PassBox.Password = decryptedPassword;
     }
 
     private void CloseButton_Click(object sender, RoutedEventArgs e)

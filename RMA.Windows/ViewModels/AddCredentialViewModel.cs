@@ -28,6 +28,15 @@ namespace RMA.Windows.ViewModels
     [ObservableProperty]
     private string _username = "";
 
+    [ObservableProperty]
+    private int _id = 0;
+
+    [ObservableProperty]
+    private string _actionButtonText = "Create Entry";
+
+    [ObservableProperty]
+    private string _headerText = "Add Credential";
+
     public AddCredentialViewModel()
     {
       LoadTemplates();
@@ -41,7 +50,10 @@ namespace RMA.Windows.ViewModels
 
     partial void OnServiceNameChanged(string value)
     {
-      // We still keep this just for the Auto-fill logic
+      // CRITICAL: If Id > 0, we are editing. Do NOT let the template 
+      // auto-fill overwrite our existing database data.
+      if (Id > 0) return;
+
       var exactMatch = AllTemplates.FirstOrDefault(t =>
           t.Name.Equals(value, StringComparison.OrdinalIgnoreCase));
 
@@ -52,29 +64,66 @@ namespace RMA.Windows.ViewModels
       }
     }
 
+    public void LoadCredential(Credential model)
+    {
+      Id = model.Id;
+      // Set ServiceName first
+      ServiceName = model.ServiceName;
+      ServiceUrl = model.ServiceUrl;
+      Username = model.Username;
+      Tag = model.Tag;
+      Notes = model.Notes;
+
+      ActionButtonText = "Update Entry";
+      HeaderText = "Edit Credential";
+    }
+
+
     [RelayCommand]
     private void Save(object parameter)
     {
-      string updatedBy = "Windows Desktop";
+      string updatedBy = Environment.MachineName; // More dynamic than hardcoded string
 
       if (parameter is Wpf.Ui.Controls.PasswordBox pb)
       {
         string rawPassword = pb.Password;
-        if (string.IsNullOrEmpty(ServiceName) || string.IsNullOrEmpty(rawPassword)) return;
+        if (string.IsNullOrEmpty(ServiceName)) return;
+
+        // If editing and password is left blank, you might want to keep the old one.
+        // For now, let's assume password is required for both.
+        if (string.IsNullOrEmpty(rawPassword) && Id == 0) return;
 
         byte[] key = VaultService.Instance.GetActiveKey();
         var crypto = new CryptoService();
         string encryptedPassword = crypto.Encrypt(rawPassword, key);
 
-        DatabaseService.Instance.AddCredential(
-            ServiceName,
-            ServiceUrl,
-            Username,
-            encryptedPassword,
-            Tag,
-            Notes,
-            updatedBy);
-        DatabaseService.Instance.LearnService(ServiceName, ServiceUrl, Tag);
+        if (Id > 0)
+        {
+          // UPDATE EXISTING
+          DatabaseService.Instance.UpdateCredential(
+              Id,
+              ServiceName,
+              ServiceUrl,
+              Username,
+              encryptedPassword,
+              Tag,
+              Notes,
+              updatedBy);
+        }
+        else
+        {
+          // CREATE NEW
+          DatabaseService.Instance.AddCredential(
+              ServiceName,
+              ServiceUrl,
+              Username,
+              encryptedPassword,
+              Tag,
+              Notes,
+              updatedBy);
+
+          DatabaseService.Instance.LearnService(ServiceName, ServiceUrl, Tag);
+        }
 
         OnSaveSuccess?.Invoke();
       }

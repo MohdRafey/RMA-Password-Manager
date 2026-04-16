@@ -11,7 +11,7 @@ namespace RMA.Windows.Data
     // Parameters for Argon2id - These MUST stay the same to unlock the vault later
     // 64MB Memory, 3 Iterations, 4 Parallel threads
     private const int DegreeOfParallelism = 4;
-    private const int Iterations = 3;
+    private const int Iterations = 10;
     private const int MemorySize = 65536;
 
     /// <summary>

@@ -75,15 +75,20 @@
       </Border.RenderTransform>
 
       <Grid>
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
         <ui:Button Appearance="Secondary"
-                           Content="{ui:SymbolIcon Dismiss24}"
-                           Padding="0"
-                           Width="30" Height="30"
-                           HorizontalAlignment="Right"
-                           VerticalAlignment="Top"
-                           Margin="0,-15,-15,0"
-                           CornerRadius="15"
-                           Click="CloseButton_Click">
+                   Content="{ui:SymbolIcon Dismiss24}"
+                   Padding="0"
+                   Width="30" Height="30"
+                   HorizontalAlignment="Right"
+                   VerticalAlignment="Top"
+                   Margin="0,-15,-15,0"
+                   CornerRadius="15"
+                   Click="CloseButton_Click">
           <ui:Button.Style>
             <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
               <Setter Property="Opacity" Value="0.4"/>
@@ -96,36 +101,68 @@
               </Style.Triggers>
             </Style>
           </ui:Button.Style>
-        </ui:Button>
+        </ui:Button> <!-- Close Button -->
 
-        <StackPanel VerticalAlignment="Center">
-          <StackPanel.Style>
-            <Style TargetType="StackPanel">
-              <Setter Property="Visibility" Value="Collapsed" />
+        <ui:Button Appearance="Transparent"
+       Content="{ui:SymbolIcon ArrowLeft24}"
+       Padding="0" Width="30" Height="30"
+       HorizontalAlignment="Right" VerticalAlignment="Top"
+       Margin="0,-15,20,0"
+       CornerRadius="15"
+       Command="{Binding ToggleSetupCommand}"
+       Visibility="{Binding IsSetupMode, Converter={StaticResource BoolToVis}}">
+          <ui:Button.Style>
+            <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
+              <Setter Property="Opacity" Value="0.4"/>
               <Style.Triggers>
-                <DataTrigger Binding="{Binding IsSetupMode}" Value="False">
-                  <Setter Property="Visibility" Value="Visible" />
-                </DataTrigger>
+                <Trigger Property="IsMouseOver" Value="True">
+                  <Setter Property="Opacity" Value="1"/>
+                  <Setter Property="Background" Value="#E9ECEF"/>
+                  <Setter Property="Foreground" Value="#3A5A40"/>
+                </Trigger>
               </Style.Triggers>
             </Style>
-          </StackPanel.Style>
-          
-          <TextBlock Text=".RMA" FontSize="42" FontWeight="ExtraBold" Foreground="#3A5A40" HorizontalAlignment="Center"/>
-          <TextBlock Text="Password Manager" FontSize="9" FontWeight="Bold" Foreground="#A3B18A" HorizontalAlignment="Center" Margin="0,-5,0,30"/>
-          
+          </ui:Button.Style>
+        </ui:Button> <!-- Back Button-->
 
-          
-          <TextBlock Text="User ID" Foreground="#3A5A40" Margin="0,0,0,8" FontSize="12" FontWeight="SemiBold"/>
-          <ui:TextBox x:Name="LoginUserIdBox" 
+        <StackPanel Grid.Row="0" Margin="0,10,0,20">
+          <TextBlock Text=".RMA" 
+                   FontSize="42" 
+                   FontWeight="ExtraBold" 
+                   Foreground="#3A5A40" 
+                   HorizontalAlignment="Center"/>
+          <TextBlock Text="Password Manager" 
+                   FontSize="9" 
+                   FontWeight="Bold" 
+                   Foreground="#A3B18A" 
+                   HorizontalAlignment="Center" 
+                   Margin="0,-5,0,0"/>
+        </StackPanel> <!--Logo-->
+
+        <Grid Grid.Row="1" VerticalAlignment="Center">
+          <StackPanel VerticalAlignment="Center" Visibility="{Binding IsSetupMode, Converter={StaticResource InverseBoolToVis}}">
+            <StackPanel.Style>
+              <Style TargetType="StackPanel">
+                <Setter Property="Visibility" Value="Collapsed" />
+                <Style.Triggers>
+                  <DataTrigger Binding="{Binding IsSetupMode}" Value="False">
+                    <Setter Property="Visibility" Value="Visible" />
+                  </DataTrigger>
+                </Style.Triggers>
+              </Style>
+            </StackPanel.Style>
+
+            <TextBlock Text="User ID" Foreground="#3A5A40" Margin="0,0,0,8" FontSize="12" FontWeight="SemiBold"/>
+            <ui:TextBox x:Name="LoginUserIdBox" 
                                 Style="{StaticResource ValidatedTextBoxStyle}"
                                 IsEnabled="{Binding CanLogin}"
                                 PlaceholderText="Enter your User ID" 
                                 Icon="{ui:SymbolIcon Person24}"
                                 Margin="0,0,0,15"
                                 Text="{Binding UserIdInput, UpdateSourceTrigger=PropertyChanged}"/>
-
-          <TextBlock Text="Master PIN" Foreground="#3A5A40" Margin="0,0,0,8" FontSize="12" FontWeight="SemiBold"/>
-          <ui:PasswordBox x:Name="LoginPinBox" 
+            
+            <TextBlock Text="Master PIN" Foreground="#3A5A40" Margin="0,0,0,8" FontSize="12" FontWeight="SemiBold"/>
+            <ui:PasswordBox x:Name="LoginPinBox" 
                                     Style="{StaticResource ValidatedPasswordBoxStyle}"
                                     IsEnabled="{Binding CanLogin}"
                                     PlaceholderText="Enter 6-digit PIN" 
@@ -140,9 +177,8 @@
                                         CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=StackPanel}}"/>
             </ui:PasswordBox.InputBindings>
           </ui:PasswordBox>
-
-          <TextBlock Text="{Binding ErrorMessage}" 
-                     
+            
+            <TextBlock Text="{Binding ErrorMessage}"                      
                                Foreground="#D00000" 
                                FontSize="14" 
                                FontWeight="Normal"
@@ -150,8 +186,8 @@
                                Margin="0,0,0,10"
                                TextWrapping="Wrap"
                                TextAlignment="Center"/>
-
-          <ui:Button Command="{Binding AuthenticateCommand}"
+            
+            <ui:Button Command="{Binding AuthenticateCommand}"
             CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=StackPanel}}"
             IsEnabled="{Binding CanLogin}"
             Style="{StaticResource RmaPrimaryButtonStyle}"
@@ -206,42 +242,99 @@
                 <TextBlock Text="{Binding LockoutSeconds, StringFormat='Locked ({0}s)'}" VerticalAlignment="Center"/>
               </StackPanel>
             </Grid>
-          </ui:Button>
-
-          <ui:Button Content="Login Using QR" 
+          </ui:Button> <!--Login Button-->
+            <ui:Button Content="Login Using QR" 
            IsEnabled="{Binding IsAuthenticating, Converter={StaticResource InverseBooleanConverter}}"
            Appearance="Secondary" 
            HorizontalAlignment="Stretch" 
            Height="40"
-           Margin="0,0,0,20"/>
-
-          <TextBlock HorizontalAlignment="Center">
+           Margin="0,0,0,20"/> <!--Authenticate Using QR-->
+            
+            <TextBlock HorizontalAlignment="Center">
             <Run Text="New User?" Foreground="#6B705C" FontSize ="10"/>
             <Hyperlink Command="{Binding ToggleSetupCommand}" Foreground="#3A5A40" FontSize ="12" TextDecorations="None">
                 Create a New Vault
             </Hyperlink>
-          </TextBlock>
-        </StackPanel>
-        
-        <StackPanel VerticalAlignment="Center" 
-            Visibility="{Binding IsSetupMode, Converter={StaticResource BoolToVis}}">
+          </TextBlock> <!--Info Box  + Link to New Vault-->
+          </StackPanel>
 
-          <TextBlock Text="Create Identity" FontSize="32" FontWeight="Bold" Foreground="#3A5A40" HorizontalAlignment="Center"/>
-          <TextBlock Text="Vault Name" Foreground="#3A5A40" Margin="0,15,0,8" FontSize="12" FontWeight="SemiBold"/>
-          <ui:TextBox x:Name="VaultNameBox" 
-                PlaceholderText="e.g. Ray_Personal" 
-                Icon="{ui:SymbolIcon Person24}"
-                Margin="0,0,0,10"/>
-          <ui:PasswordBox x:Name="SetupPinBox" PlaceholderText="Choose 6-digit PIN" Margin="0,0,0,10"/>
-          <ui:PasswordBox x:Name="ConfirmPinBox" PlaceholderText="Confirm PIN" Margin="0,0,0,20"/>
+          <StackPanel VerticalAlignment="Center" Visibility="{Binding IsSetupMode, Converter={StaticResource BoolToVis}}">
+            
+            <TextBlock Text="Vault Name" Foreground="#3A5A40" Margin="0,0,0,8" FontSize="12" FontWeight="SemiBold"/>
+            <ui:TextBox PlaceholderText="e.g. MyPersonalVault" 
+                Icon="{ui:SymbolIcon folder24}"
+                Margin="0,0,0,15"
+                Text="{Binding SetupVaultName, UpdateSourceTrigger=PropertyChanged}">
+              <ui:TextBox.Style>
+                <Style TargetType="ui:TextBox" BasedOn="{StaticResource {x:Type ui:TextBox}}">
+                  <Style.Triggers>
+                    <DataTrigger Binding="{Binding SetupNameError}" Value="True">
+                      <Setter Property="BorderBrush" Value="#D00000"/>
+                      <Setter Property="BorderThickness" Value="1.5"/>
+                    </DataTrigger>
+                  </Style.Triggers>
+              </Style>
+              </ui:TextBox.Style>
+            </ui:TextBox>
 
-          <ui:Button Content="Initialize Security" 
-               Command="{Binding CreateVaultCommand}"
-               CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=StackPanel}}"
-               Appearance="Success" 
-               HorizontalAlignment="Stretch" 
-               Height="45"/>
-        </StackPanel>
+            <Grid Margin="0,0,0,8">
+              <TextBlock Text="Master PIN" Foreground="#3A5A40" FontSize="12" FontWeight="SemiBold"/>
+              <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <TextBlock Text="Strength: " Foreground="#A3B18A" FontSize="10" VerticalAlignment="Bottom"/>
+                <TextBlock Text="{Binding SetupStrengthText}" Foreground="{Binding SetupStrengthColor}" FontSize="10" FontWeight="Bold" VerticalAlignment="Bottom"/>
+              </StackPanel>
+            </Grid>
+            <ui:PasswordBox x:Name="SetupPinBox" 
+                     PasswordChanged="SetupPinBox_PasswordChanged"
+                     PlaceholderText="Choose 6-digit PIN" 
+                     MaxLength="6"
+                     Margin="0,0,0,15">
+              <ui:PasswordBox.Style>
+                <Style TargetType="ui:PasswordBox" BasedOn="{StaticResource {x:Type ui:PasswordBox}}">
+                  <Style.Triggers>
+                    <DataTrigger Binding="{Binding SetupPinError}" Value="True">
+                      <Setter Property="BorderBrush" Value="#D00000"/>
+                      <Setter Property="BorderThickness" Value="1.5"/>
+                    </DataTrigger>
+                  </Style.Triggers>
+                </Style>
+              </ui:PasswordBox.Style>
+            </ui:PasswordBox>
+
+            <TextBlock Text="Confirm PIN" Foreground="#3A5A40" Margin="0,0,0,8" FontSize="12" FontWeight="SemiBold"/>
+            <ui:PasswordBox x:Name="ConfirmPinBox" 
+                     PasswordChanged="ConfirmPinBox_PasswordChanged"
+                     PlaceholderText="Re-enter PIN" 
+                     MaxLength="6"
+                     Margin="0,0,0,15">
+              <ui:PasswordBox.Style>
+                <Style TargetType="ui:PasswordBox" BasedOn="{StaticResource {x:Type ui:PasswordBox}}">
+                  <Style.Triggers>
+                    <DataTrigger Binding="{Binding SetupConfirmError}" Value="True">
+                      <Setter Property="BorderBrush" Value="#D00000"/>
+                      <Setter Property="BorderThickness" Value="1.5"/>
+                    </DataTrigger>
+                  </Style.Triggers>
+                </Style>
+              </ui:PasswordBox.Style>
+            </ui:PasswordBox>
+
+            <TextBlock Text="{Binding ErrorMessage}" 
+                       Foreground="#D00000" 
+                       FontSize="14" 
+                       FontWeight="Normal"
+                       HorizontalAlignment="Left" 
+                       Margin="0,0,0,10" 
+                       TextWrapping="Wrap" 
+                       TextAlignment="Center" 
+                       Height="40"/>
+            
+            <ui:Button Content="Initialize Vault" 
+                       Command="{Binding CreateVaultCommand}"
+                       Style="{StaticResource RmaPrimaryButtonStyle}"
+                       HorizontalAlignment="Stretch" Height="50"/>
+          </StackPanel>
+        </Grid>
       </Grid>
     </Border>
   </Grid>

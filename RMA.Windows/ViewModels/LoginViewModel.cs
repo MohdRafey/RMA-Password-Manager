@@ -24,13 +24,28 @@ namespace RMA.Windows.ViewModels
 
     // --- UI State Properties ---
     [ObservableProperty] private bool _isSetupMode = false;
-    [ObservableProperty][NotifyPropertyChangedFor(nameof(CanLogin))] private bool _isAuthenticating;
-    [ObservableProperty][NotifyPropertyChangedFor(nameof(CanLogin))] private bool _isLockedOut;
+
+    [ObservableProperty][NotifyPropertyChangedFor(nameof(CanLogin))] 
+    private bool _isAuthenticating;
+    [ObservableProperty][NotifyPropertyChangedFor(nameof(CanLogin))] 
+    private bool _isLockedOut;
+
     [ObservableProperty] private int _lockoutSeconds;
     [ObservableProperty] private string _errorMessage = string.Empty;
     [ObservableProperty] private bool _idHasError;
     [ObservableProperty] private bool _pinHasError;
     [ObservableProperty] private string _userIdInput = string.Empty;
+
+    [ObservableProperty] private string _setupVaultName = string.Empty;
+    [ObservableProperty] private string _setupPin = string.Empty;
+    [ObservableProperty] private string _setupConfirmPin = string.Empty;
+
+    [ObservableProperty] private bool _setupNameError;
+    [ObservableProperty] private bool _setupPinError;
+    [ObservableProperty] private bool _setupConfirmError;
+
+    [ObservableProperty] private string _setupStrengthText = "Weak";
+    [ObservableProperty] private string _setupStrengthColor = "#D00000"; // Red
 
     private int _failedAttempts = 0;
     public bool CanLogin => !IsAuthenticating && !IsLockedOut;
@@ -45,6 +60,28 @@ namespace RMA.Windows.ViewModels
     {
       IdHasError = false; // Border turns normal immediately
       if (!PinHasError) ErrorMessage = string.Empty;
+    }
+
+    partial void OnSetupVaultNameChanged(string value) => SetupNameError = false;
+    partial void OnSetupPinChanged(string value)
+    {
+      SetupPinError = false;
+      UpdateStrength(value);
+    }
+
+    partial void OnSetupConfirmPinChanged(string value) => SetupConfirmError = false;
+
+    private void UpdateStrength(string pin)
+    {
+      if (string.IsNullOrEmpty(pin)) { SetupStrengthText = "Empty"; return; }
+
+      // Simple logic for 6-digit PIN strength
+      bool isSequential = "01234567890".Contains(pin) || "9876543210".Contains(pin);
+      bool isRepeated = pin.All(c => c == pin[0]);
+
+      if (pin.Length < 6) { SetupStrengthText = "Too Short"; SetupStrengthColor = "#D00000"; }
+      else if (isSequential || isRepeated) { SetupStrengthText = "Predictable"; SetupStrengthColor = "#E67E22"; }
+      else { SetupStrengthText = "Strong"; SetupStrengthColor = "#3A5A40"; }
     }
 
     [RelayCommand]
@@ -175,47 +212,118 @@ namespace RMA.Windows.ViewModels
       }
     }
 
+    //[RelayCommand]
+    //private void CreateVault(object parameter)
+    //{
+    //  if (parameter is FrameworkElement container)
+    //  {
+    //    var nameBox = container.FindName("VaultNameBox") as Wpf.Ui.Controls.TextBox;
+    //    var pinBox = container.FindName("SetupPinBox") as Wpf.Ui.Controls.PasswordBox;
+    //    var confirmBox = container.FindName("ConfirmPinBox") as Wpf.Ui.Controls.PasswordBox;
+
+    //    if (nameBox == null || pinBox == null || confirmBox == null) return;
+
+    //    string vaultName = nameBox.Text.Trim(); // Preserve "RayVault"
+    //    string pin = pinBox.Password;
+
+    //    if (string.IsNullOrEmpty(vaultName) || pin.Length != 6) return;
+
+    //    try
+    //    {
+    //      // Check for existing vault regardless of case
+    //      var existing = _settings.GetAllRegisteredVaultNames();
+    //      if (existing.Any(v => v.Equals(vaultName, StringComparison.OrdinalIgnoreCase)))
+    //      {
+    //        RmaDialog.Error("Identity Error","A vault with this name already exists (case-insensitive).");
+    //        return;
+    //      }
+
+    //      byte[] salt = _crypto.GenerateSalt();
+    //      byte[] masterKey = _crypto.DeriveKey(pin, salt);
+
+    //      // Save using the PRESERVED case "RayVault"
+    //      _settings.SaveSalt(salt, vaultName);
+    //      VaultService.Instance.InitializeVault(masterKey, vaultName);
+    //      DatabaseService.Instance.InitializeDatabase();
+
+    //      RmaDialog.Info($"Vault '{vaultName}' created!", "Success");
+    //      IsSetupMode = false;
+    //    }
+    //    catch (Exception ex)
+    //    {
+    //      RmaDialog.Error($"Exception Error:", "{ex.Message}");
+    //    }
+    //  }
+    //}
     [RelayCommand]
-    private void CreateVault(object parameter)
+    private void CreateVault()
     {
-      if (parameter is FrameworkElement container)
+      // 1. Reset all error states first
+      SetupNameError = false;
+      SetupPinError = false;
+      SetupConfirmError = false;
+      ErrorMessage = string.Empty;
+
+      bool hasError = false;
+
+      // 2. Check Vault Name
+      if (string.IsNullOrWhiteSpace(SetupVaultName))
       {
-        var nameBox = container.FindName("VaultNameBox") as Wpf.Ui.Controls.TextBox;
-        var pinBox = container.FindName("SetupPinBox") as Wpf.Ui.Controls.PasswordBox;
-        var confirmBox = container.FindName("ConfirmPinBox") as Wpf.Ui.Controls.PasswordBox;
+        SetupNameError = true;
+        hasError = true;
+      }
 
-        if (nameBox == null || pinBox == null || confirmBox == null) return;
+      // 3. Check PIN (and Confirm PIN)
+      if (string.IsNullOrEmpty(SetupPin) || SetupPin.Length != 6)
+      {
+        SetupPinError = true;
+        hasError = true;
+      }
 
-        string vaultName = nameBox.Text.Trim(); // Preserve "RayVault"
-        string pin = pinBox.Password;
+      if (string.IsNullOrEmpty(SetupConfirmPin) ||
+              SetupConfirmPin.Length != 6 ||
+              SetupPin != SetupConfirmPin)
+      {
+        SetupConfirmError = true;
+        hasError = true;
+      }
 
-        if (string.IsNullOrEmpty(vaultName) || pin.Length != 6) return;
+      // 4. If any errors were found, trigger feedback and stop
+      if (hasError)
+      {
+        ErrorMessage = "Please correct the highlighted fields.";
+        TriggerShake();
+        return;
+      }
 
-        try
+      // 3. Execution
+      try
+      {
+        var existing = _settings.GetAllRegisteredVaultNames();
+        if (existing.Any(v => v.Equals(SetupVaultName, StringComparison.OrdinalIgnoreCase)))
         {
-          // Check for existing vault regardless of case
-          var existing = _settings.GetAllRegisteredVaultNames();
-          if (existing.Any(v => v.Equals(vaultName, StringComparison.OrdinalIgnoreCase)))
-          {
-            RmaDialog.Error("Identity Error","A vault with this name already exists (case-insensitive).");
-            return;
-          }
-
-          byte[] salt = _crypto.GenerateSalt();
-          byte[] masterKey = _crypto.DeriveKey(pin, salt);
-
-          // Save using the PRESERVED case "RayVault"
-          _settings.SaveSalt(salt, vaultName);
-          VaultService.Instance.InitializeVault(masterKey, vaultName);
-          DatabaseService.Instance.InitializeDatabase();
-
-          RmaDialog.Info($"Vault '{vaultName}' created!", "Success");
-          IsSetupMode = false;
+          SetupNameError = true;
+          ErrorMessage = "Vault name already exists.";
+          TriggerShake();
+          return;
         }
-        catch (Exception ex)
-        {
-          RmaDialog.Error($"Exception Error:", "{ex.Message}");
-        }
+
+        byte[] salt = _crypto.GenerateSalt();
+        byte[] masterKey = _crypto.DeriveKey(SetupPin, salt);
+
+        _settings.SaveSalt(salt, SetupVaultName);
+        VaultService.Instance.InitializeVault(masterKey, SetupVaultName);
+        DatabaseService.Instance.InitializeDatabase();
+
+        RmaDialog.Info($"Vault '{SetupVaultName}' created!", "Success");
+
+        // Reset fields and return to login
+        SetupVaultName = string.Empty;
+        IsSetupMode = false;
+      }
+      catch (Exception ex)
+      {
+        RmaDialog.Error("System Error", ex.Message);
       }
     }
 

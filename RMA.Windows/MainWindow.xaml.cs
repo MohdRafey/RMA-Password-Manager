@@ -42,6 +42,22 @@ namespace RMA.Windows
       }
     }
 
+    private void SetupPinBox_PasswordChanged(object sender, RoutedEventArgs e)
+    {
+      if (this.DataContext is LoginViewModel vm && sender is Wpf.Ui.Controls.PasswordBox pb)
+      {
+        vm.SetupPin = pb.Password;
+      }
+    }
+
+    private void ConfirmPinBox_PasswordChanged(object sender, RoutedEventArgs e)
+    {
+      if (this.DataContext is LoginViewModel vm && sender is Wpf.Ui.Controls.PasswordBox pb)
+      {
+        vm.SetupConfirmPin = pb.Password;
+      }
+    }
+
 
 
     #region Animations
